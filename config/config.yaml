@@ -1,0 +1,48 @@
+
+FLOW_SWITCH:
+  WEB_SCRAPPING: True
+  COLLEGE_SCRAPPING: False
+  NBA_SCRAPING: True
+
+SCRAPING_VARS:
+  COLLEGE:
+    START_YEAR: 1987
+    END_YEAR: 2022
+    CONFERENCES_PER_SEASON_EXCEL: 'conferences_per_season_url_{start_year}_{end_year}.xlsx'
+    COLLEGES_PER_SEASON_EXCEL: 'colleges_per_season_url_{start_year}_{end_year}.xlsx'
+    PLAYERS_URLS_EXCEL: 'college_players_url_{start_year}_{end_year}.xlsx'
+    PLAYERS_RAW_DATA_EXCEL: 'college_players_data_raw_{start_year}_{end_year}.xlsx'
+    COLLEGE_REFERENCE_BASE_URL: 'https://www.sports-reference.com'
+    TABLES_IDS:
+      PER_GAME: 'players_per_game'
+      TOTALS: 'players_totals'
+      PER_MINUTE: 'players_per_min'
+      PER_POSS: 'players_per_poss'
+      ADVANCED: 'players_advanced'
+  NBA:
+    START_YEAR: 1987
+    END_YEAR: 2022
+    BASKERBALL_REFERENCE_BASE_URL: 'https://www.basketball-reference.com'
+    NBA_LEAGUE_PER_GAME_STATS: '/leagues/NBA_{year}_per_game.html'
+    NBA_LEAGUE_PER_100POSS_STATS: '/leagues/NBA_{year}_per_poss.html'
+    NBA_LEAGUE_ADVANCED_STATS: '/leagues/NBA_{year}_advanced.html'
+    PER_GAME_TABLE_ID: 'per_game_stats'
+    PER_POSS_TABLE_ID: 'per_poss_stats'
+    ADVANCED_TABLE_ID: 'advanded_stats'
+    PLAYERS_URLS_EXCEL: 'nba_players_url_{start_year}_{end_year}.xlsx'
+    PLAYERS_RAW_DATA_EXCEL: 'nba_players_data_raw_{start_year}_{end_year}.xlsx'
+    TABLES_IDS:
+      PER_GAME: 'per_game'
+      TOTALS: 'totals'
+      PER_MINUTE: 'per_minute'
+      PER_POSS: 'per_poss'
+      ADVANCED: 'advanced'
+    
+
+FOLDERS:
+  DATA: 'data'
+  URL: 'url'
+  COLLEGE_RAW: 'college_players_raw_data'
+  NBA_RAW: 'nba_players_raw_data'
+
+
