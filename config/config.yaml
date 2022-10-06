@@ -6,7 +6,7 @@ FLOW_SWITCH:
 
 SCRAPING_VARS:
   CONTROL:
-    COLLEGE_SCRAPPING: False
+    COLLEGE_SCRAPPING: True
     NBA_SCRAPING: True
   COLLEGE:
     START_YEAR: 1987
@@ -49,8 +49,10 @@ DATA_PREPROCESS_PIPELINE:
   FEATURE_SET:
     YEAR_BUILD: 1996
     FEATURESET_EXCEL: 'featureset_{output}_{build_year}.xlsx'
+    FEATURESET_EXCEL_PREPROCESSED: 'featureset_{output}_preprocessed_{build_year}.xlsx'
     NBA:
       NBA_SUCCESS_VAR: 'ws'
+      SUCCESS_AGG: 'sum'
       ROOKIE_CONTRACT: 4
       TABLE_TYPES:
         PER_GAME: 'PER_GAME_DATA'
@@ -76,8 +78,23 @@ DATA_PREPROCESS_PIPELINE:
       ]
 
       MERGING_COLUMNS: [
-        'id', 'name', 'season', 'school', 'draft_overall', 'draft_year', 'draft',
+        'id', 'name', 'season', 'school', 'draft_overall', 'draft_year', 'draft'
         ]
+
+      NORMALIZED_FEATURES: [
+        'pts (game)',
+        'ast (game)',
+        'tbr (game)',
+        'ws (advanced)'
+      ]
+
+      OUTLIER_DETECTOR_VARS: [
+        ['3p% (game)', '3pa (game)', 0.5]
+      ]
+
+      NULL_COLUMNS_DROP: 0.5
+
+      NORM_VAR: 'strength_of_schedule (game)'
 
       SPEC_DATA:
         PER_GAME_DATA: [
@@ -111,10 +128,21 @@ DATA_PREPROCESS_PIPELINE:
   CORRELATION:
     MAX_VARS_PLOT: 9
     PLOT_TYPE_1_TITLE: 'Correlation College to NBA (Success As {var})'
+    PLOT_TYPE_3_TITLE: 'High Correlation Var - {corr} - {x} vs {y}'
     PLOT_TYPE_1_FILE: 'ALL_Correlation_to_{var}_{number}.png'
     PLOT_TYPE_2_FILE: 'Correlation_to_{var}_{number}.png'
+    PLOT_TYPE_3_FILE: 'high_correlation_{x}_{y}.png'
+    HIGH_CORR_THRESHOLD: 0.15
     FOLDER:
       SUCCESS_VAR: '{var}'
+    NOT_RELEVANT_COLUMNS: [
+      'id',
+      'draft_overall',
+      'draft_year',
+      'draft',
+      'season',
+      'position'
+    ]
 
     
 

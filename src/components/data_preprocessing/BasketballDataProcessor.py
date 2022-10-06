@@ -17,7 +17,7 @@ class BasketDataProcessor(object):
         self.nba_year_start = config_variables['SCRAPING_VARS']['NBA']['START_YEAR']
         self.nba_year_end = config_variables['SCRAPING_VARS']['NBA']['END_YEAR']
         
-        self.top_path = top_dir = dirname(dirname(dirname(dirname(abspath(__file__)))))
+        self.top_path = dirname(dirname(dirname(dirname(abspath(__file__)))))
 
         self.data_folder = config_variables['FOLDERS']['DATA']
         self.url_folder = config_variables['FOLDERS']['URL']
@@ -30,6 +30,7 @@ class BasketDataProcessor(object):
         self.nba_raw_excel = config_variables['SCRAPING_VARS']['NBA']['PLAYERS_RAW_DATA_EXCEL'].format(start_year = self.nba_year_start, end_year = self.nba_year_end)
 
         self.nba_success_var = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['NBA']['NBA_SUCCESS_VAR']
+        self.success_var_agg = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['NBA']['SUCCESS_AGG']
         self.year_build_start = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['YEAR_BUILD']
         self.rookie_contract_length = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['NBA']['ROOKIE_CONTRACT']
 
@@ -48,13 +49,25 @@ class BasketDataProcessor(object):
         self.college_spec_data = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['SPEC_DATA']
 
         self.output_featureset_excel = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_EXCEL'].format(output = self.nba_success_var, build_year = self.year_build_start)
+        self.output_featureset_excel_preprocessed = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_EXCEL_PREPROCESSED'].format(output = self.nba_success_var, build_year = self.year_build_start)    
 
         self.max_vars_correlation_plot = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['MAX_VARS_PLOT']
         self.success_var_folder = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['FOLDER']['SUCCESS_VAR'].format(var = self.nba_success_var.upper())
+        self.correlation_drop_vars = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['NOT_RELEVANT_COLUMNS']
+        self.high_correlation_threshold = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['HIGH_CORR_THRESHOLD']
 
-        self.plot_1_title = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_1_TITLE'].format(var = self.nba_success_var)
+        self.plot_1_title = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_1_TITLE'].format(var = self.nba_success_var.upper())
+        self.plot_3_title = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_3_TITLE']
         self.plot_1_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_1_FILE']
-        self.plot_2_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_2_FILE']
+        self.plot_2_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_2_FILE']  
+        self.plot_3_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_3_FILE']         
+
+        self.norm_var = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NORM_VAR']
+        self.vars_to_norm = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NORMALIZED_FEATURES']
+        self.outlier_vars = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['OUTLIER_DETECTOR_VARS']
+
+        self.null_column__drop = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NULL_COLUMNS_DROP']
+        
 
     def nba_df_filter(self):
 
@@ -67,8 +80,14 @@ class BasketDataProcessor(object):
                                 (nba_df['draft_year'] > self.year_build_start) & 
                                 (nba_df['draft'] == 1)].reset_index(drop = True).copy()
 
-        nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name'], as_index=False)[self.nba_success_var].sum()
-        nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', '{success_var}_sum'.format(success_var = self.nba_success_var)]
+        if self.success_var_agg == 'mean':
+            
+            nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm'], as_index=False)[self.nba_success_var].mean()
+            nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm', '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)]
+        else:
+            nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm'], as_index=False)[self.nba_success_var].sum()
+            nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm', '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)]
+
 
         return nba_df_rookie
 
@@ -215,13 +234,80 @@ class BasketDataProcessor(object):
         nba_college_merge_df = nba_college_merge_df[nba_college_merge_df['season'].notnull()].reset_index(drop = True).copy()
 
         # Save to excel
-        self.save_feature_set(nba_college_merge_df)
+        self.save_feature_set(nba_college_merge_df, self.output_featureset_excel)
 
         return nba_college_merge_df
 
-    def save_feature_set(self, df):
+    def norm_features(self, feature_set):
+
+        # Get normalizing var and normalize it from 0 to 1
+        normalizer =(feature_set[self.norm_var] - feature_set[self.norm_var].min())/(feature_set[self.norm_var].max() - feature_set[self.norm_var].min())
+
+        for column in self.vars_to_norm:
+
+            feature_set['{column} (normalized)'.format(column = column)] = feature_set[column] * normalizer
+
+        return feature_set
+
+    def outlier_corrector(self, featureset):
+
+        # Get variables to correct outliers
+        vars_to_correct = []
+        for var_outlier, var_treshold, threshold in self.outlier_vars:
+
+            # Find people below the theshold
+            mean_var = featureset[featureset[var_treshold] < threshold][var_outlier].mean()
+            std_var = featureset[featureset[var_treshold] < threshold][var_outlier].std()
+
+            std_limit = mean_var + 2 * std_var
+
+            # Find people below the theshold
+            var_corrected = []
+            for index, row in featureset.iterrows():
+
+                if (row[var_treshold] < threshold) & (row[var_outlier] > std_limit):
+
+                    var_corrected.append(mean_var)
+
+                else:
+                    var_corrected.append(row[var_outlier])
+
+            
+            featureset[var_outlier] = var_corrected
+
+        return featureset
+
+    def build_featureset(self):
 
         excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel)
+
+        if os.path.exists(excel_path):
+
+            nba_college_merge_df = pd.read_excel(excel_path)
+
+        else:
+
+            nba_college_merge_df = self.merge_predictor_college()
+
+
+        # Get normalized features based on strength of schedule
+        nba_college_norm_df = self.norm_features(nba_college_merge_df)
+
+        # Impute values of players which are to high - 3%
+        nba_college_norm_df = self.outlier_corrector(nba_college_merge_df)
+
+        # Drop variables with more than x% missing variables
+        perc = self.null_column__drop * 100
+        min_count =  int(((100 - perc) / 100) * nba_college_norm_df.shape[0] + 1)
+        nba_college_norm_df = nba_college_norm_df.dropna( axis=1, thresh=min_count)
+
+        self.save_feature_set(nba_college_norm_df, self.output_featureset_excel_preprocessed)
+
+        return nba_college_norm_df
+
+    def save_feature_set(self, df, feature_set_name):
+
+        excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, feature_set_name)
 
         writer = pd.ExcelWriter(excel_path, engine='xlsxwriter') 
         df.to_excel(writer, index=False)
@@ -229,18 +315,30 @@ class BasketDataProcessor(object):
 
     def get_correlation_plots(self):
 
-        excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel)
+        excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel_preprocessed)
 
         if os.path.exists(excel_path):
 
-            # Load excel
+            # Create folder if it doesnt exist
+            plots_directory = os.path.join(self.top_path, self.data_folder, self.correlation_folder, self.success_var_folder)
+            if not os.path.exists(excel_path):
+            
+                os.mkdir(plots_directory)
 
+            # Delete previous plots in the folder
+            for plot in os.listdir(plots_directory):
+                os.remove(os.path.join(plots_directory, plot))
+
+            # Load excel
             featureset_df = pd.read_excel(excel_path)
+
+            # Drop variables not useful for correlation
+            featureset_df.drop(columns=self.correlation_drop_vars, inplace=True)
 
             n_columns = len(featureset_df.columns)
             splits = int(np.ceil(n_columns / self.max_vars_correlation_plot))
 
-            success_var = '{success_var}_sum'.format(success_var = self.nba_success_var)
+            success_var = '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)
             output_var_column_number = featureset_df.columns.get_loc(success_var)
 
             for split in range(splits):
@@ -269,7 +367,7 @@ class BasketDataProcessor(object):
 
                 output_file_name = self.plot_1_file.format(var = self.nba_success_var,  number = split)
                 path_to_output_plot = os.path.join(self.top_path, self.data_folder, self.correlation_folder, self.success_var_folder, output_file_name)
-                plt.savefig(path_to_output_plot)
+                plt.savefig(path_to_output_plot, bbox_inches='tight')
 
                 # Get seaborn plot 2
                 
@@ -278,7 +376,28 @@ class BasketDataProcessor(object):
                 heatmap.set_title(self.plot_1_title, fontdict={'fontsize':18}, pad=16)
                 output_file_name = self.plot_2_file.format(var = self.nba_success_var,  number = split)
                 path_to_output_plot = os.path.join(self.top_path, self.data_folder, self.correlation_folder, self.success_var_folder, output_file_name)
-                plt.savefig(path_to_output_plot)
+                plt.savefig(path_to_output_plot, bbox_inches='tight')
+
+            # Plot graphs with high correlation
+            columns_high_corr = []
+            featureset_corr = featureset_df.corr()
+
+            for index, row in featureset_corr.iterrows():
+
+                if (abs(row[success_var]) > self.high_correlation_threshold) & (success_var != index):
+                    columns_high_corr.append([index, row[success_var]])
+
+            for high_corr_var, corr in columns_high_corr:
+
+                output_file_name = self.plot_3_file.format(x = high_corr_var,  y = success_var)
+                path_to_output_plot = os.path.join(self.top_path, self.data_folder, self.correlation_folder, self.success_var_folder, output_file_name)
+
+                plt.figure()
+                plt.plot(featureset_df[high_corr_var], featureset_df[success_var], linestyle = 'none', marker = 'p')
+                plt.xlabel(high_corr_var)
+                plt.ylabel(success_var)
+                plt.title(self.plot_3_title.format(corr = str(round(corr, 2)) , x = high_corr_var.upper(), y = success_var.upper()))
+                plt.savefig(path_to_output_plot, bbox_inches='tight')
 
         else:
 
