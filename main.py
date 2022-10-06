@@ -1,5 +1,6 @@
 from config import config_variables
 from src.components.nba_scrapper.BasketScraper import BasketScrapper
+from src.components.data_preprocessing.BasketballDataProcessor import BasketDataProcessor
 
 ######################## SET A WORKFLOW IN THE PROJECT #################################
 
@@ -8,14 +9,31 @@ if config_variables['FLOW_SWITCH']['WEB_SCRAPPING']:
 
     basketball_scrapper = BasketScrapper(config_variables=config_variables)
 
-    if config_variables['FLOW_SWITCH']['COLLEGE_SCRAPPING']:
+    if config_variables['SCRAPING_VARS']['CONTROL']['COLLEGE_SCRAPPING']:
 
         #Get Data of college players
         basketball_scrapper.college_data_scraping()
 
-    if config_variables['FLOW_SWITCH']['NBA_SCRAPING']:
+    if config_variables['SCRAPING_VARS']['CONTROL']['NBA_SCRAPING']:
         #Get Data of NBA players
         basketball_scrapper.nba_data_scraping()
+
+if config_variables['FLOW_SWITCH']['DATA_PREPROCESSING']:
+    
+    basket_data_prep = BasketDataProcessor(config_variables=config_variables)
+
+    #Build Featureset
+    if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_BUILD']:
+        
+        basket_data_prep.merge_predictor_college()
+
+    #Get Plots to visualize correlation between variables
+    if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_CORRELATION']:
+
+        basket_data_prep.get_correlation_plots()
+    
+
+
 
 
 

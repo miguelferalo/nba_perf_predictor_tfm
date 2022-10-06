@@ -1,10 +1,13 @@
 
 FLOW_SWITCH:
-  WEB_SCRAPPING: True
-  COLLEGE_SCRAPPING: False
-  NBA_SCRAPING: True
+  WEB_SCRAPPING: False
+  DATA_PREPROCESSING: True
+  
 
 SCRAPING_VARS:
+  CONTROL:
+    COLLEGE_SCRAPPING: False
+    NBA_SCRAPING: True
   COLLEGE:
     START_YEAR: 1987
     END_YEAR: 2022
@@ -37,6 +40,82 @@ SCRAPING_VARS:
       PER_MINUTE: 'per_minute'
       PER_POSS: 'per_poss'
       ADVANCED: 'advanced'
+
+DATA_PREPROCESS_PIPELINE:
+  CONTROL:
+    FEATURESET_BUILD: False
+    FEATURESET_IMPUTATION: True
+    FEATURESET_CORRELATION: True
+  FEATURE_SET:
+    YEAR_BUILD: 1996
+    FEATURESET_EXCEL: 'featureset_{output}_{build_year}.xlsx'
+    NBA:
+      NBA_SUCCESS_VAR: 'ws'
+      ROOKIE_CONTRACT: 4
+      TABLE_TYPES:
+        PER_GAME: 'PER_GAME_DATA'
+        TOTALS: 'SEASON_TOTAL_DATA'
+        PER_MINUTE: 'PER_36_MIN_DATA'
+        PER_POSS: 'PER_100_POSS_DATA'
+        ADVANCED: 'SEASON_ADVANCED_DATA'
+        
+    COLLEGE:
+      TABLE_TYPES:
+        PER_GAME: 'PER_GAME_DATA'
+        TOTALS: 'SEASON_TOTAL_DATA'
+        PER_MINUTE: 'PER_40_MIN_DATA'
+        PER_POSS: 'PER_100_POSS_DATA'
+        ADVANCED: 'SEASON_ADVANCED_DATA'
+
+      TABLES_LOAD: [
+        'PER_GAME_DATA',
+        #'SEASON_TOTAL_DATA',
+        #'PER_40_MIN_DATA',
+        #'PER_100_POSS_DATA',
+        'SEASON_ADVANCED_DATA',
+      ]
+
+      MERGING_COLUMNS: [
+        'id', 'name', 'season', 'school', 'draft_overall', 'draft_year', 'draft',
+        ]
+
+      SPEC_DATA:
+        PER_GAME_DATA: [
+          'n_seasons',
+          'pts (dev)',
+          'pts (prop)',
+          'tbr (prop)',
+          'ast (prop)',
+          'stl (prop)',
+          'tov (prop)'
+        ]
+
+        SEASON_TOTAL_DATA: [
+
+        ]
+
+        PER_40_MIN_DATA: [
+
+        ]
+
+        PER_100_POSS_DATA: [
+
+        ]
+
+        SEASON_ADVANCED_DATA: [
+          'ts% (dev)',
+          'efg% (dev)',
+          'ws (prop)',
+        ]
+
+  CORRELATION:
+    MAX_VARS_PLOT: 9
+    PLOT_TYPE_1_TITLE: 'Correlation College to NBA (Success As {var})'
+    PLOT_TYPE_1_FILE: 'ALL_Correlation_to_{var}_{number}.png'
+    PLOT_TYPE_2_FILE: 'Correlation_to_{var}_{number}.png'
+    FOLDER:
+      SUCCESS_VAR: '{var}'
+
     
 
 FOLDERS:
@@ -44,5 +123,8 @@ FOLDERS:
   URL: 'url'
   COLLEGE_RAW: 'college_players_raw_data'
   NBA_RAW: 'nba_players_raw_data'
+  FEATURESET: 'featureset'
+  CORRELATION: 'correlation_plots'
+  
 
 
