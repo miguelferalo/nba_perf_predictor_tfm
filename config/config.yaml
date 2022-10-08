@@ -1,7 +1,8 @@
 
 FLOW_SWITCH:
   WEB_SCRAPPING: False
-  DATA_PREPROCESSING: True
+  DATA_PREPROCESSING: False
+  MODELINING: True
   
 
 SCRAPING_VARS:
@@ -43,16 +44,17 @@ SCRAPING_VARS:
 
 DATA_PREPROCESS_PIPELINE:
   CONTROL:
-    FEATURESET_BUILD: False
-    FEATURESET_IMPUTATION: True
-    FEATURESET_CORRELATION: True
+    FEATURESET_BUILD: True
+    FEATURESET_CORRELATION: False
+    FEATURESET_IMPUTATION_VISUALIZER: False
   FEATURE_SET:
     YEAR_BUILD: 1996
-    FEATURESET_EXCEL: 'featureset_{output}_{build_year}.xlsx'
-    FEATURESET_EXCEL_PREPROCESSED: 'featureset_{output}_preprocessed_{build_year}.xlsx'
+    FEATURESET_EXCEL: 'featureset_{output}_{agg}_{build_year}.xlsx'
+    FEATURESET_EXCEL_PREPROCESSED: 'featureset_{output}_{agg}_preprocessed_{build_year}.xlsx'
+    FEATURESET_NA_VALUES_DIAGNOSIS: 'featureset_{output}_{agg}_{build_year}_na_values_diagnosis.xlsx'
     NBA:
       NBA_SUCCESS_VAR: 'ws'
-      SUCCESS_AGG: 'sum'
+      SUCCESS_AGG: 'mean'
       ROOKIE_CONTRACT: 4
       TABLE_TYPES:
         PER_GAME: 'PER_GAME_DATA'
@@ -78,7 +80,7 @@ DATA_PREPROCESS_PIPELINE:
       ]
 
       MERGING_COLUMNS: [
-        'id', 'name', 'season', 'school', 'draft_overall', 'draft_year', 'draft'
+        'id', 'name', 'season', 'school', 'position', 'draft_overall', 'draft_year', 'draft', 'games_started'
         ]
 
       NORMALIZED_FEATURES: [
@@ -92,13 +94,16 @@ DATA_PREPROCESS_PIPELINE:
         ['3p% (game)', '3pa (game)', 0.5]
       ]
 
-      NULL_COLUMNS_DROP: 0.5
+      NULL_COLUMNS_DROP: 0.45
+      NULL_COLUMNS_AVG_UMPUTATION: 0.00
 
       NORM_VAR: 'strength_of_schedule (game)'
 
       SPEC_DATA:
         PER_GAME_DATA: [
           'n_seasons',
+          'position',
+          'school',
           'pts (dev)',
           'pts (prop)',
           'tbr (prop)',
@@ -120,10 +125,40 @@ DATA_PREPROCESS_PIPELINE:
         ]
 
         SEASON_ADVANCED_DATA: [
+          'position',
+          'school',
           'ts% (dev)',
           'efg% (dev)',
           'ws (prop)',
         ]
+
+    IMPUTATION:
+      VARS_TO_IMPUTE: [
+        '3p% (game)',
+        'ast% (advanced)',
+        'blk% (advanced)',
+        'usg% (advanced)',
+        'games_started',
+        'drb (game)',
+        'orb (game)',
+        'trb% (advanced)',
+        'per (advanced)',
+        'tov% (advanced)'
+      ]
+
+      REGRESSION_VAR: [
+        '3p (game)',
+        'ast (game)',
+        'blk (game)',
+        'fga (game)',
+        'mp (game)',
+        'tbr (game)',
+        'tbr (game)',
+        'tbr (game)',
+        'tov (game)',
+        'tov (game)'
+      ]
+          
 
   CORRELATION:
     MAX_VARS_PLOT: 9
@@ -132,6 +167,9 @@ DATA_PREPROCESS_PIPELINE:
     PLOT_TYPE_1_FILE: 'ALL_Correlation_to_{var}_{number}.png'
     PLOT_TYPE_2_FILE: 'Correlation_to_{var}_{number}.png'
     PLOT_TYPE_3_FILE: 'high_correlation_{x}_{y}.png'
+    PLOT_TYPE_4_TITLE: 'Histogram NBA Players {success_var} during Rookie Contract'
+    HISTOGRAM_BINS: 20
+    PLOT_TYPE_4_FILE: 'histogram_{success_var}.png'
     HIGH_CORR_THRESHOLD: 0.15
     FOLDER:
       SUCCESS_VAR: '{var}'
@@ -141,8 +179,64 @@ DATA_PREPROCESS_PIPELINE:
       'draft_year',
       'draft',
       'season',
-      'position'
+      'position',
+      'school'
     ]
+
+MODELING_PIPELINE:
+  CONTROL:
+    HYPER_PARAMETER_TUNING: False
+    TRAIN_AND_PREDICT: True
+  RANDOM_SEED: 1234
+  TRAINING:
+    FEATURESET:
+      TEST_SPLIT: 0.2
+      COLUMNS_TO_DROP: [
+        'id',
+        'draft_overall',
+        'draft_year',
+        'name',
+        'school',
+        'draft',
+        'position',
+        'season'
+      ]
+
+    HYPERPARAMETER_TUNING:
+      ITERATIONS: 300
+      N_TREES: [10, 200]
+      MAX_DEPTH_SETTING: ['limit', null]
+      MAX_DEPTH_VALUES: [3, 10]
+      MAX_FEATURES: [0.2, 0.4, 0.6, 0.8, 1]
+      CV_FOLDS: 10
+      HYPERPARAMETER_STORING_FILE: 'hyper_parameter_tuning_{var}_{agg}_{n_fold}_fold_{error}.xlsx'
+      FOLDER: '{var}_{agg}'
+      HYPERPARAMETER_COLUMNS: [
+        'n_trees',
+        'max_depth',
+        'max_features'
+      ]
+      MODEL_DEFAULT_PARAMETERS: [100, null, null]
+      HYPERPARAMETER_EVALUATION_MEASUREMENT: 'rmse'
+      COMPARISON_TO_DEFAULT_MEASUREMENT: 'rmse'
+      N_FOLD_EVALUATION: '{n}_fold_{evaluation}'
+      ERROR_FOLD_MEAN: '{evaluation}_mean'
+      ERROR_FOLD_STD: '{evaluation}_std'
+
+  PREDICTION:
+    PREDICTION_CLASS: 2018
+    EVALUATION_METRIC: 'mae'
+    RELEVANT_COLUMNS_DRAFT_EVALUATION: [
+      'name',
+      'school',
+      'draft_year',
+      'draft_overall',
+    ]
+    DRAFT_CLASS_PREDICTIONS_EXCEL: 'draft_class_{year}_predictions_{var}.xlsx'
+    DRAFT_CLASS_PREDICTIONS_PLOT: 'draft_class_{year}_predictions_{var}.png'
+    FOLDER:
+      PLOTS: 'visualizations'
+      EXCEL: 'excel'
 
     
 
@@ -153,6 +247,9 @@ FOLDERS:
   NBA_RAW: 'nba_players_raw_data'
   FEATURESET: 'featureset'
   CORRELATION: 'correlation_plots'
+  DATA_VISUALIZATIONS: 'data_visualizations'
+  HYPERPARAMETER_TUNING: 'hyperparameter_tuning'
+  PREDICTIONS_FOLDER: 'predictions'
   
 
 

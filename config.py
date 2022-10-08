@@ -1,7 +1,6 @@
 import yaml
 import os
 
-
 # Load YAML file
 CONFIG_FOLDER = 'config'
 YAML_FILE = 'config.yaml'

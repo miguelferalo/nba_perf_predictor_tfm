@@ -1,12 +1,12 @@
+from statistics import linear_regression
 import pandas as pd
-import openpyxl
 import os
 from datetime import date
-import sys
 from os.path import dirname, abspath
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import math
 
 class BasketDataProcessor(object):
 
@@ -20,11 +20,11 @@ class BasketDataProcessor(object):
         self.top_path = dirname(dirname(dirname(dirname(abspath(__file__)))))
 
         self.data_folder = config_variables['FOLDERS']['DATA']
-        self.url_folder = config_variables['FOLDERS']['URL']
         self.college_raw_folder = config_variables['FOLDERS']['COLLEGE_RAW']
         self.nba_raw_folder = config_variables['FOLDERS']['NBA_RAW']
         self.featureset_folder = config_variables['FOLDERS']['FEATURESET']
         self.correlation_folder = config_variables['FOLDERS']['CORRELATION']
+        self.data_visualizations_folder = config_variables['FOLDERS']['DATA_VISUALIZATIONS']
 
         self.college_raw_excel = config_variables['SCRAPING_VARS']['COLLEGE']['PLAYERS_RAW_DATA_EXCEL'].format(start_year = self.college_year_start, end_year = self.college_year_end)
         self.nba_raw_excel = config_variables['SCRAPING_VARS']['NBA']['PLAYERS_RAW_DATA_EXCEL'].format(start_year = self.nba_year_start, end_year = self.nba_year_end)
@@ -48,8 +48,9 @@ class BasketDataProcessor(object):
 
         self.college_spec_data = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['SPEC_DATA']
 
-        self.output_featureset_excel = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_EXCEL'].format(output = self.nba_success_var, build_year = self.year_build_start)
-        self.output_featureset_excel_preprocessed = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_EXCEL_PREPROCESSED'].format(output = self.nba_success_var, build_year = self.year_build_start)    
+        self.output_featureset_excel = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_EXCEL'].format(output = self.nba_success_var, agg = self.success_var_agg, build_year = self.year_build_start)
+        self.output_featureset_excel_preprocessed = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_EXCEL_PREPROCESSED'].format(output = self.nba_success_var, agg = self.success_var_agg, build_year = self.year_build_start)  
+        self.output_featureset_na_values_diagnosis = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['FEATURESET_NA_VALUES_DIAGNOSIS'].format(output = self.nba_success_var, agg = self.success_var_agg, build_year = self.year_build_start)      
 
         self.max_vars_correlation_plot = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['MAX_VARS_PLOT']
         self.success_var_folder = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['FOLDER']['SUCCESS_VAR'].format(var = self.nba_success_var.upper())
@@ -58,16 +59,23 @@ class BasketDataProcessor(object):
 
         self.plot_1_title = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_1_TITLE'].format(var = self.nba_success_var.upper())
         self.plot_3_title = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_3_TITLE']
+        self.plot_4_title = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_4_TITLE']
         self.plot_1_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_1_FILE']
         self.plot_2_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_2_FILE']  
-        self.plot_3_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_3_FILE']         
+        self.plot_3_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_3_FILE']  
+        self.plot_4_file = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['PLOT_TYPE_4_FILE']          
 
         self.norm_var = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NORM_VAR']
         self.vars_to_norm = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NORMALIZED_FEATURES']
         self.outlier_vars = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['OUTLIER_DETECTOR_VARS']
 
-        self.null_column__drop = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NULL_COLUMNS_DROP']
-        
+        self.null_column_drop_threshold = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NULL_COLUMNS_DROP']
+        self.null_column_avg_imputation_threshold = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['COLLEGE']['NULL_COLUMNS_AVG_UMPUTATION']
+        self.features_list_drop = config_variables['MODELING_PIPELINE']['TRAINING']['FEATURESET']['COLUMNS_TO_DROP']
+
+        self.variables_to_impute = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['IMPUTATION']['VARS_TO_IMPUTE']
+        self.linear_regression_vars = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['IMPUTATION']['REGRESSION_VAR']
+        self.histogram_bins = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['HISTOGRAM_BINS']
 
     def nba_df_filter(self):
 
@@ -82,18 +90,17 @@ class BasketDataProcessor(object):
 
         if self.success_var_agg == 'mean':
             
-            nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm'], as_index=False)[self.nba_success_var].mean()
-            nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm', '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)]
+            nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name', 'heigth_cm'], as_index=False)[self.nba_success_var].mean()
+            nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', 'heigth_cm', '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)]
         else:
-            nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm'], as_index=False)[self.nba_success_var].sum()
-            nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', 'position', 'heigth_cm', '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)]
-
+            nba_df_rookie = nba_df_rookie.groupby(['id', 'draft_overall', 'draft_year', 'name', 'heigth_cm'], as_index=False)[self.nba_success_var].sum()
+            nba_df_rookie.columns = ['id', 'draft_overall', 'draft_year', 'name', 'heigth_cm', '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)]
 
         return nba_df_rookie
 
     def college_specific_data_columns(self, college_last_df, college_df, columns_spec):
 
-        # Load df
+        # Drop duplicates
         college_last_df = college_last_df.drop_duplicates(subset=['id'], keep='last')
 
         for column in columns_spec:
@@ -105,6 +112,23 @@ class BasketDataProcessor(object):
 
                 college_last_df = college_last_df.merge(n_season, on=['id'],
                                                                 how='left')  
+
+            if 'position' in column:
+
+                position = college_df.groupby(['id'], as_index=False)['position'].last()
+                position.columns = ['id', 'position']
+
+                college_last_df = college_last_df.merge(position, on=['id'],
+                                                                how='left')
+
+            if 'school' in column:
+
+                school = college_df.groupby(['id'], as_index=False)['school'].last()
+                school.columns = ['id', 'school']
+
+                college_last_df = college_last_df.merge(school, on=['id'],
+                                                                how='left')
+                                                                
 
             if '(dev)' in column:
 
@@ -149,7 +173,7 @@ class BasketDataProcessor(object):
         if 'ws' in college_df.columns:
             college_df['ws'] = college_df['ws'].replace('-', '0')
             college_df['ws'] = college_df['ws'].astype(float)
-        college_df_last = college_df.groupby(['id','name', 'school'], as_index=False).last('season')
+        college_df_last = college_df.groupby(['id','name'], as_index=False).last('season')
 
         # Get specific column types
         college_df_last = self.college_specific_data_columns(college_df_last, college_df, specific_vars)
@@ -184,7 +208,7 @@ class BasketDataProcessor(object):
 
         if self.college_per_40m_table in df_to_load_list:
 
-            college_per_40_m_df = college_df_loader(self.college_per_40_m_table)
+            college_per_40_m_df = self.college_df_loader(self.college_per_40_m_table)
 
             college_per_40_m_df.columns = ['{column} ({type})'.format(column = column, type = self.college_per_40m_table.lower().split('_')[2]) if column not in unchanged_column_names else column for column in college_per_40_m_df]
 
@@ -277,6 +301,58 @@ class BasketDataProcessor(object):
 
         return featureset
 
+    def missing_values_imputation(self, df):
+
+        # Get a missing values dictionary
+        missing_values_dict = {}
+
+        df_na_checker = df.copy()
+        df_na_checker = df_na_checker.drop(columns=self.features_list_drop)
+
+
+        for column in df_na_checker.columns:
+
+            number_missing = df_na_checker[column].isna().sum()
+            total_values = len(df_na_checker)
+            perc_missing_values = round(number_missing * 100/ total_values, 2)
+            missing_values_dict[column] = perc_missing_values
+
+        missing_values_df = pd.DataFrame([missing_values_dict])
+        missing_values_df = missing_values_df.T.copy()
+        missing_values_df['data column'] = missing_values_df.index
+        missing_values_df.columns = ['missing_values %', 'data column']
+        missing_values_df = missing_values_df[['data column', 'missing_values %']].sort_values('missing_values %', ascending=False)
+
+        # Save missing values dataframe to excel
+        self.save_feature_set(missing_values_df, self.output_featureset_na_values_diagnosis)
+
+        # Drop columns with a high proportion of null values
+        perc = self.null_column_drop_threshold * 100
+        min_count =  int(((100 - perc) / 100) * df.shape[0] + 1)
+        df = df.dropna(axis=1, thresh=min_count)
+
+        # Apply linear regression imputation on the remaining varibales with missing na
+        for index, na_column in enumerate(self.variables_to_impute):
+
+            if na_column == '3p% (game)':
+                df[na_column] = df[na_column].fillna(0)
+
+                # Impute values of players which are to high - 3%
+                df = self.outlier_corrector(df)
+
+            else:
+
+                # calculating value of coefficients in case of linear polynomial
+                df_regression = df.dropna(axis=0, subset=[na_column]).reset_index(drop = True).copy()
+                x = df_regression[self.linear_regression_vars[index]].to_list()
+                y = df_regression[na_column].to_list()
+                linear_regression = np.poly1d(np.polyfit(x, y, 1))
+
+                df[na_column] = [linear_regression(df[self.linear_regression_vars[index]][row]) if math.isnan(value) else value for row, value in enumerate(df[na_column])]
+
+
+        return df
+
     def build_featureset(self):
 
         excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel)
@@ -293,14 +369,17 @@ class BasketDataProcessor(object):
         # Get normalized features based on strength of schedule
         nba_college_norm_df = self.norm_features(nba_college_merge_df)
 
-        # Impute values of players which are to high - 3%
-        nba_college_norm_df = self.outlier_corrector(nba_college_merge_df)
+        # Tranform Position variable to numeric
+        nba_college_norm_df['position_cat'] = nba_college_norm_df['position'].astype('category').cat.codes
+        nba_college_norm_df['school_cat'] = nba_college_norm_df['school'].astype('category').cat.codes
 
-        # Drop variables with more than x% missing variables
-        perc = self.null_column__drop * 100
-        min_count =  int(((100 - perc) / 100) * nba_college_norm_df.shape[0] + 1)
-        nba_college_norm_df = nba_college_norm_df.dropna( axis=1, thresh=min_count)
+        # Drop variables with more than x% missing variables, treat imputation
+        nba_college_norm_df = self.missing_values_imputation(nba_college_norm_df)
 
+        # Drop variables with two entries same player - two schools at last season
+        nba_college_norm_df = nba_college_norm_df.groupby('id', as_index=False).last().copy()
+
+        # Save Featureset to excel
         self.save_feature_set(nba_college_norm_df, self.output_featureset_excel_preprocessed)
 
         return nba_college_norm_df
@@ -402,4 +481,79 @@ class BasketDataProcessor(object):
         else:
 
             print('Featureset {featureset} does not exist, build it first!'.format(featureset = self.output_featureset_excel))
+
+    def data_visualizer(self):
+
+        feature_set_excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel)
+        na_values_excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_na_values_diagnosis)
+
+        if os.path.exists(feature_set_excel_path) & os.path.exists(na_values_excel_path):
+
+            visualizations_directory = os.path.join(self.top_path, self.data_folder, self.data_visualizations_folder)
+
+            # Load featureset and missing_values dataset
+            featureset = pd.read_excel(feature_set_excel_path)
+            featureset.drop(columns=self.correlation_drop_vars, inplace=True)
+            missing_values_df = pd.read_excel(na_values_excel_path)
+            # Get only missing column below minimum before dropping and abobe minimum before imputing with mean
+            vars_no_missing_values = missing_values_df[missing_values_df['missing_values %'] == 0]['data column'].to_list()
+            missing_values_df = missing_values_df[(missing_values_df['missing_values %'] <= self.null_column_drop_threshold * 100) &
+                                                (missing_values_df['missing_values %'] > self.null_column_avg_imputation_threshold * 100)].copy()
+            
+            # Loop through missing value columns and get the variable with higher correlation
+            missing_var_list = []
+            corr_df = featureset.corr()
+            for column in missing_values_df['data column']:
+
+                for row in range(len(corr_df)):
+                    highest_correlated_corr = corr_df.sort_values(column, ascending = False).reset_index(drop = True)[column][row]
+                    if corr_df[corr_df[column] == highest_correlated_corr].index[0] in vars_no_missing_values:
+                        highest_correlated_var = corr_df[corr_df[column] == highest_correlated_corr].index[0]
+                        break
+                missing_var_list.append([column, highest_correlated_var, highest_correlated_corr])
+
+            # Plot Visualization on missing value column and highest correlated variable
+            for na_column, highest_correlated_var, highest_correlated_corr in missing_var_list:
+
+                output_file_name = self.plot_3_file.format(x = highest_correlated_var,  y = na_column)
+                path_to_output_plot = os.path.join(self.top_path, self.data_folder, self.data_visualizations_folder, output_file_name)
+
+                plt.figure()
+                plt.plot(featureset[highest_correlated_var], featureset[na_column], linestyle = 'none', marker = 'p')
+                plt.xlabel(highest_correlated_var)
+                plt.ylabel(na_column)
+                plt.title(self.plot_3_title.format(corr = str(round(highest_correlated_corr, 2)) , x = highest_correlated_var.upper(), y = na_column.upper()))
+                plt.savefig(path_to_output_plot, bbox_inches='tight')
+
+            # Plot Visualization of success var
+            success_var = '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)
+            output_file_name = self.plot_4_file.format(success_var = success_var)
+            path_to_output_plot = os.path.join(self.top_path, self.data_folder, self.data_visualizations_folder, output_file_name)
+
+            plt.figure()
+            plt.hist(x=[featureset[success_var]], bins=self.histogram_bins)
+            plt.xlabel(success_var)
+            plt.ylabel('Number of Players')
+            plt.title(self.plot_4_title.format(success_var = success_var.upper()))
+            plt.savefig(path_to_output_plot, bbox_inches='tight')
+                
+
+
+        elif os.path.exists(feature_set_excel_path):
+
+            print('The missing values excel does not exist')
+
+        elif os.path.exists(na_values_excel_path):
+
+            print('The featureset does not exists')
+
+        else:
+
+            print('Both Files do not exist')
+
+            
+            
+
+
+
 

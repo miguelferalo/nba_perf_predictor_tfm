@@ -1,6 +1,7 @@
 from config import config_variables
 from src.components.nba_scrapper.BasketScraper import BasketScrapper
 from src.components.data_preprocessing.BasketballDataProcessor import BasketDataProcessor
+from src.components.modeling.DraftForecast import DraftForecast
 
 ######################## SET A WORKFLOW IN THE PROJECT #################################
 
@@ -32,8 +33,26 @@ if config_variables['FLOW_SWITCH']['DATA_PREPROCESSING']:
     if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_CORRELATION']:
 
         basket_data_prep.get_correlation_plots()
-    
 
+    #Visualize Missing Data columns for imputation purposes
+    if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_IMPUTATION_VISUALIZER']:
+
+        basket_data_prep.data_visualizer()
+    
+############ PIPELINE TO HYPERPARAMETER TUNE, TRAIN AND PREDICT ############
+if config_variables['FLOW_SWITCH']['MODELINING']:
+    
+    draft_forecast_wizard = DraftForecast(config_variables=config_variables)
+
+    #Perform Hyperparameter tuning process
+    if config_variables['MODELING_PIPELINE']['CONTROL']['HYPER_PARAMETER_TUNING']:
+        
+        draft_forecast_wizard.hyper_parameter_tuning()
+
+    #Train and Make Predictions
+    if config_variables['MODELING_PIPELINE']['CONTROL']['TRAIN_AND_PREDICT']:
+
+        draft_forecast_wizard.train_and_predict()
 
 
 
