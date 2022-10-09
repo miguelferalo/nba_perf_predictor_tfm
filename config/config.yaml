@@ -203,7 +203,7 @@ MODELING_PIPELINE:
       ]
 
     HYPERPARAMETER_TUNING:
-      ITERATIONS: 300
+      ITERATIONS: 1000
       N_TREES: [10, 200]
       MAX_DEPTH_SETTING: ['limit', null]
       MAX_DEPTH_VALUES: [3, 10]
@@ -224,7 +224,7 @@ MODELING_PIPELINE:
       ERROR_FOLD_STD: '{evaluation}_std'
 
   PREDICTION:
-    PREDICTION_CLASS: 2018
+    PREDICTION_CLASS: 2019
     EVALUATION_METRIC: 'mae'
     RELEVANT_COLUMNS_DRAFT_EVALUATION: [
       'name',
@@ -234,9 +234,11 @@ MODELING_PIPELINE:
     ]
     DRAFT_CLASS_PREDICTIONS_EXCEL: 'draft_class_{year}_predictions_{var}.xlsx'
     DRAFT_CLASS_PREDICTIONS_PLOT: 'draft_class_{year}_predictions_{var}.png'
+    FEATURE_IMPORTANCE_EXCEL: 'draft_class_{year}_feature_importance_{var}.xlsx'
     FOLDER:
       PLOTS: 'visualizations'
       EXCEL: 'excel'
+      IMPORTANCE_FOLDER: 'feature_importance'
 
     
 

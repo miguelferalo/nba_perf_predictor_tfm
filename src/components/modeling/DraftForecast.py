@@ -28,6 +28,7 @@ class DraftForecast:
     self.predictions_folder = config_variables['FOLDERS']['PREDICTIONS_FOLDER']
     self.predictions_plots_folder = config_variables['MODELING_PIPELINE']['PREDICTION']['FOLDER']['PLOTS']
     self.predictions_excel_folder = config_variables['MODELING_PIPELINE']['PREDICTION']['FOLDER']['EXCEL']
+    self.feature_importance_folder = config_variables['MODELING_PIPELINE']['PREDICTION']['FOLDER']['IMPORTANCE_FOLDER']
 
     self.nba_success_var = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['NBA']['NBA_SUCCESS_VAR']
     self.success_var_agg = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['NBA']['SUCCESS_AGG']
@@ -62,6 +63,7 @@ class DraftForecast:
     self.draft_class_evaluation_columns = config_variables['MODELING_PIPELINE']['PREDICTION']['RELEVANT_COLUMNS_DRAFT_EVALUATION']
     self.success_var = '{var}_{agg}'.format(var = self.nba_success_var, agg = self.success_var_agg)
     self.draft_class_predictions_excel = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_EXCEL'].format(year = self.draft_class_to_predict, var = self.success_var)
+    self.feature_importance_excel = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_EXCEL'].format(year = self.draft_class_to_predict, var = self.success_var)
     self.draft_class_predictions_plot = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_PLOT'].format(year = self.draft_class_to_predict, var = self.success_var)
     self.current_year = date.today().year 
 
@@ -126,8 +128,8 @@ class DraftForecast:
 
     elif error_meeasurement == 'mape':
       
-      diff = np.subtract(actuals,predictions)
-      abs_perc_error = [diff[row]/ actuals[row] if actuals.to_numpy()[row] != 0 else diff[row]/ 0.1 for row in range(len(diff))]
+      diff = np.subtract(actuals.to_numpy(),predictions)
+      abs_perc_error = [abs(diff[row]/ actuals.to_numpy()[row]) if abs(actuals.to_numpy()[row]) >= 0.1 else abs(diff[row]/ 0.1) for row in range(len(diff))]
       error_metric = np.mean(abs_perc_error) * 100
 
     return error_metric
@@ -261,7 +263,9 @@ class DraftForecast:
     test_labels = featureset[featureset['draft_year'] == prediction_class][self.success_var].copy()
     prediction_names = featureset[featureset['draft_year'] == prediction_class].copy()
 
-    return train_features, test_features, train_labels, test_labels, prediction_names
+    feature_list = train_features.columns.to_list()
+
+    return train_features, test_features, train_labels, test_labels, prediction_names, feature_list
 
   def prediction_draft_order(self, draft_player_names, actuals, predictions):
 
@@ -301,6 +305,25 @@ class DraftForecast:
     plt.title('Draft Class {year} - {var} prediction vs actuals - Mean {error} = {numeric}'.format(year = self.draft_class_to_predict, var = self.success_var, error = self.prediction_error, numeric = str(round(pred_error, 2))))
     plt.savefig(path_to_plot, bbox_inches='tight')
 
+  def feature_importance(self, random_forest, feature_list):
+
+    # Get Importances
+    importances = (random_forest.feature_importances_)
+
+    # List of tuples with variable and importance
+    feature_importances = [(feature, round(importance, 2)) for feature, importance in zip(feature_list, importances)]
+
+    # Sort the feature importances by most important first
+    feature_importances = sorted(feature_importances, key = lambda x: x[1], reverse = True)
+
+    # Convert to dataframe and save to excel
+    feature_importance_df = pd.DataFrame(columns = ['Data Column', 'Feature Importance'])
+    for data, importance in feature_importances:
+      new_row = {'Data Column': data, 'Feature Importance': importance}
+      feature_importance_df = feature_importance_df.append(new_row, ignore_index=True)
+
+    path_to_excel = os.path.join(self.top_path, self.data_folder, self.predictions_folder, self.feature_importance_folder, self.feature_importance_excel)
+    feature_importance_df.to_excel(path_to_excel, index=False)
 
   def train_and_predict(self):
 
@@ -314,7 +337,7 @@ class DraftForecast:
       print('Need to perform hyperparameter tuning')
 
     # Get train sets and split sets based on class to be predicted 
-    train_features, test_features, train_labels, test_labels, prediction_names = self.model_split_draft_class()
+    train_features, test_features, train_labels, test_labels, prediction_names, feature_list = self.model_split_draft_class()
 
     # Fit the model
     rf = self.fit_model(n_trees, max_depth, max_features, train_features, train_labels)
@@ -324,6 +347,9 @@ class DraftForecast:
 
     # Calculate metric error, plot, sort and save
     self.prediction_draft_order(prediction_names, test_labels, rf_predictions)
+
+    # Get Feature Importance
+    self.feature_importance(rf, feature_list)
 
     
 
