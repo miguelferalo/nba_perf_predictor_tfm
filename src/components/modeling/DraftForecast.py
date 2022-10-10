@@ -350,12 +350,3 @@ class DraftForecast:
 
     # Get Feature Importance
     self.feature_importance(rf, feature_list)
-
-    
-
-    
-    
-
-
-
-

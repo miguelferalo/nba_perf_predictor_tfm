@@ -803,7 +803,4 @@ class BasketScrapper(object):
         per_game_df, total_df, per_36_min_df, per_100_poss_df, advanced_df = self.get_excel_raw_nba(player_links)
 
         return per_game_df, total_df, per_36_min_df, per_100_poss_df, advanced_df
-
-
-
-    
+  

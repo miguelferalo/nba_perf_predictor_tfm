@@ -550,10 +550,3 @@ class BasketDataProcessor(object):
         else:
 
             print('Both Files do not exist')
-
-            
-            
-
-
-
-
