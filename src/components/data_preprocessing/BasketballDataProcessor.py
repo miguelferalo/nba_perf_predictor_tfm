@@ -77,6 +77,12 @@ class BasketDataProcessor(object):
         self.linear_regression_vars = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET']['IMPUTATION']['REGRESSION_VAR']
         self.histogram_bins = config_variables['DATA_PREPROCESS_PIPELINE']['CORRELATION']['HISTOGRAM_BINS']
 
+        self.features_analysis_breakdown_columns = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET_SUMMARY']['FEATURES_BREAKDOWN_COLUMNS']
+        self.features_description = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET_SUMMARY']['FEATURES_DESCRIPTION'].format(output = self.nba_success_var, agg = self.success_var_agg, build_year = self.year_build_start)
+        self.boxplot_title = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET_SUMMARY']['BOXPLOT_TITLE']
+        self.boxplot_output_file = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET_SUMMARY']['BOXPLOT_FILE']
+        self.max_boxes = config_variables['DATA_PREPROCESS_PIPELINE']['FEATURE_SET_SUMMARY']['BOXPLOT_MAX_BOXES_GRAPH']
+
     def nba_df_filter(self):
 
         path_to_nba_excel = os.path.join(self.top_path, self.data_folder, self.nba_raw_folder, self.nba_raw_excel)
@@ -489,8 +495,6 @@ class BasketDataProcessor(object):
 
         if os.path.exists(feature_set_excel_path) & os.path.exists(na_values_excel_path):
 
-            visualizations_directory = os.path.join(self.top_path, self.data_folder, self.data_visualizations_folder)
-
             # Load featureset and missing_values dataset
             featureset = pd.read_excel(feature_set_excel_path)
             featureset.drop(columns=self.correlation_drop_vars, inplace=True)
@@ -522,8 +526,20 @@ class BasketDataProcessor(object):
                 plt.plot(featureset[highest_correlated_var], featureset[na_column], linestyle = 'none', marker = 'p')
                 plt.xlabel(highest_correlated_var)
                 plt.ylabel(na_column)
-                plt.title(self.plot_3_title.format(corr = str(round(highest_correlated_corr, 2)) , x = highest_correlated_var.upper(), y = na_column.upper()))
+                plt.title(self.plot_3_title.format(corr = str(round(highest_correlated_corr, 2)) , y = highest_correlated_var.upper(), x = na_column.upper()))
                 plt.savefig(path_to_output_plot, bbox_inches='tight')
+
+            # Plot Visualization of 3pt var
+            output_file_name = '3pt%_closer_look.png'
+            path_to_output_plot = os.path.join(self.top_path, self.data_folder, self.data_visualizations_folder, output_file_name)
+            featureset_reduced = featureset[featureset['3p (game)'] < 1].copy()
+
+            plt.figure()
+            plt.plot(featureset_reduced['3p (game)'], featureset_reduced['3p% (game)'], linestyle = 'none', marker = 'p')
+            plt.xlabel('3p (game)')
+            plt.ylabel('3p% (game)')
+            plt.title('Closer look at 3p% from players with low 3p')
+            plt.savefig(path_to_output_plot, bbox_inches='tight')
 
             # Plot Visualization of success var
             success_var = '{success_var}_{agg}'.format(success_var = self.nba_success_var, agg = self.success_var_agg)
@@ -536,8 +552,6 @@ class BasketDataProcessor(object):
             plt.ylabel('Number of Players')
             plt.title(self.plot_4_title.format(success_var = success_var.upper()))
             plt.savefig(path_to_output_plot, bbox_inches='tight')
-                
-
 
         elif os.path.exists(feature_set_excel_path):
 
@@ -550,3 +564,69 @@ class BasketDataProcessor(object):
         else:
 
             print('Both Files do not exist')
+
+
+    def definitive_featureset_summary(self):
+
+        feature_set_def_excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel_preprocessed)
+
+        if os.path.exists(feature_set_def_excel_path):
+
+            # Get a dataframe with the distribution of the features
+            featureset = pd.read_excel(feature_set_def_excel_path)
+            featureset_analysis = featureset.drop(columns=self.college_merging_columns).copy()
+            
+            rows_list = []
+            for column in featureset_analysis.columns:
+                row_dict = {}
+                row_dict[self.features_analysis_breakdown_columns[0]] = column
+                row_dict[self.features_analysis_breakdown_columns[1]] = featureset_analysis[column].mean()
+                row_dict[self.features_analysis_breakdown_columns[2]] = featureset_analysis[column].std()
+                row_dict[self.features_analysis_breakdown_columns[3]] = featureset_analysis[column].min()
+                row_dict[self.features_analysis_breakdown_columns[4]] = featureset_analysis[column].max()
+                row_dict[self.features_analysis_breakdown_columns[5]] = featureset_analysis[column].quantile(0.25)
+                row_dict[self.features_analysis_breakdown_columns[6]] = featureset_analysis[column].quantile(0.5)
+                row_dict[self.features_analysis_breakdown_columns[7]] = featureset_analysis[column].quantile(0.75)
+                
+                rows_list.append(row_dict)
+
+            features_breakdown = pd.DataFrame(rows_list)   
+            path_to_output_folder = os.path.join(self.top_path, self.data_folder, self.featureset_folder, '{var}_{agg}'.format(var = self.nba_success_var, agg = self.success_var_agg))
+            if not os.path.exists(path_to_output_folder):
+            
+                os.mkdir(path_to_output_folder)
+
+            path_to_output_excel = os.path.join(path_to_output_folder, self.features_description)
+            # Save to excel
+            features_breakdown.to_excel(path_to_output_excel, index=False)
+
+            # Create boxplots for the features
+            n_columns = len(featureset_analysis.columns)
+            splits = int(np.ceil(n_columns / self.max_boxes))
+
+            sorted_columns_values = features_breakdown.sort_values(self.features_analysis_breakdown_columns[4])[self.features_analysis_breakdown_columns[0]].to_list()
+
+            for split in range(splits):
+
+                #Get splits columns
+                split_columns = []
+                for column in sorted_columns_values[split * self.max_boxes:split * self.max_boxes + self.max_boxes]:
+                    split_columns.append(column)
+                
+                if len(split_columns) > 0:
+
+                    reduced_df = featureset_analysis[split_columns].copy()
+                    path_to_output_boxplot = os.path.join(path_to_output_folder, self.boxplot_output_file.format(n = split))
+                    
+                    plt.figure()
+                    sns.boxplot(x="variable", y="value", data=pd.melt(reduced_df))
+                    plt.title(self.boxplot_title)
+                    plt.savefig(path_to_output_boxplot, bbox_inches='tight')
+
+
+        else:
+
+            print('The definitive featureset does not exists')
+
+
+

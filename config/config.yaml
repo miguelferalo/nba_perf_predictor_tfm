@@ -1,8 +1,8 @@
 
 FLOW_SWITCH:
   WEB_SCRAPPING: False
-  DATA_PREPROCESSING: False
-  MODELINING: True
+  DATA_PREPROCESSING: True
+  MODELINING: False
   
 
 SCRAPING_VARS:
@@ -44,9 +44,10 @@ SCRAPING_VARS:
 
 DATA_PREPROCESS_PIPELINE:
   CONTROL:
-    FEATURESET_BUILD: True
+    FEATURESET_BUILD: False
     FEATURESET_CORRELATION: False
     FEATURESET_IMPUTATION_VISUALIZER: False
+    FEATURESET_VAR_ANALYSIS: True
   FEATURE_SET:
     YEAR_BUILD: 1996
     FEATURESET_EXCEL: 'featureset_{output}_{agg}_{build_year}.xlsx'
@@ -182,6 +183,24 @@ DATA_PREPROCESS_PIPELINE:
       'position',
       'school'
     ]
+
+  FEATURE_SET_SUMMARY:
+    FEATURES_BREAKDOWN_COLUMNS: [
+      'FEATURE NAME',
+      'MEAN',
+      'STD',
+      'MIN',
+      'MAX',
+      '1ST QUARTILE',
+      '2ND QUARTILE',
+      '3RD QUARTILE'
+    ]
+
+    FEATURES_DESCRIPTION: 'featureset_{output}_{agg}_preprocessed_{build_year}_summary.xlsx'
+    BOXPLOT_TITLE: 'Featureset Boxplot'
+    BOXPLOT_FILE: 'Boxplot_{n}.png'
+    BOXPLOT_MAX_BOXES_GRAPH: 3
+
 
 MODELING_PIPELINE:
   CONTROL:

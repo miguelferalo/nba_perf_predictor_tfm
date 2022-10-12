@@ -38,6 +38,11 @@ if config_variables['FLOW_SWITCH']['DATA_PREPROCESSING']:
     if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_IMPUTATION_VISUALIZER']:
 
         basket_data_prep.data_visualizer()
+
+    #Get a summary of the definitive dataframe
+    if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_VAR_ANALYSIS']:
+
+        basket_data_prep.definitive_featureset_summary()
     
 ############ PIPELINE TO HYPERPARAMETER TUNE, TRAIN AND PREDICT ############
 if config_variables['FLOW_SWITCH']['MODELINING']:
