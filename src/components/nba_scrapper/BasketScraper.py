@@ -1,13 +1,9 @@
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import pandas as pd
-import openpyxl
 import os
-from datetime import date
-import xlsxwriter
-from time import sleep
-import sys
 from os.path import dirname, abspath
+import time
 
 
 class BasketScrapper(object):
@@ -488,6 +484,8 @@ class BasketScrapper(object):
 
         'Run a logic to scrape the data from university basketball players'
 
+        start_time = time.time()
+
         #Check if there is already a file with the players links
         end_year = self.college_year_end
         start_year = self.college_year_start
@@ -516,6 +514,9 @@ class BasketScrapper(object):
 
         #Scrape the players data
         per_game_df, total_df, per_40_min_df, per_100_poss_df, advanced_df = self.get_excel_raw_college(player_links)
+
+        #Print Run time
+        print("{step} took {time} minutes".format(step = 'The College Data web scraping step', time = round((time.time() - start_time) / 60, 2)))
 
         return per_game_df, total_df, per_40_min_df, per_100_poss_df, advanced_df
 
@@ -624,8 +625,6 @@ class BasketScrapper(object):
         info_draft = [data.getText() for data in info.find_all('strong')]
 
         info_general = [data.get_text().replace('\n', '').replace(' ', '') for index, data in enumerate(info.find_all('p'))]
-            
-            
 
         height_cm = 'unknown'
         height_feet = 'unknown'
@@ -634,7 +633,6 @@ class BasketScrapper(object):
         team_draft = 'none'
         draft_overall = 0
         draft_year = 0
-        
 
         #Find which row contains cm and kg
         for index, data in enumerate(info_general):
@@ -779,6 +777,8 @@ class BasketScrapper(object):
 
         'scrape data from nba players'
 
+        start_time = time.time()
+
         #Check if there is already a file with the players links
         end_year = self.nba_year_end
         start_year = self.nba_year_start
@@ -801,6 +801,10 @@ class BasketScrapper(object):
 
         #Scrape the players data
         per_game_df, total_df, per_36_min_df, per_100_poss_df, advanced_df = self.get_excel_raw_nba(player_links)
+
+        #Print Run time
+        print("{step} took {time} minutes".format(step = 'The NBA Data web scraping step', time = round((time.time() - start_time) / 60, 2)))
+
 
         return per_game_df, total_df, per_36_min_df, per_100_poss_df, advanced_df
   

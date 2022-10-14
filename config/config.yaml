@@ -1,9 +1,11 @@
-
 FLOW_SWITCH:
   WEB_SCRAPPING: False
-  DATA_PREPROCESSING: True
-  MODELINING: False
-  
+  DATA_PREPROCESSING: False
+  MODELINING: True
+
+LOGGING_MESSAGE:
+  START: '{step} STEP START - SUCCESS'
+  END: '{step} STEP END - SUCCESS'
 
 SCRAPING_VARS:
   CONTROL:
@@ -44,10 +46,10 @@ SCRAPING_VARS:
 
 DATA_PREPROCESS_PIPELINE:
   CONTROL:
-    FEATURESET_BUILD: False
+    FEATURESET_BUILD: True
     FEATURESET_CORRELATION: False
     FEATURESET_IMPUTATION_VISUALIZER: False
-    FEATURESET_VAR_ANALYSIS: True
+    FEATURESET_VAR_ANALYSIS: False
   FEATURE_SET:
     YEAR_BUILD: 1996
     FEATURESET_EXCEL: 'featureset_{output}_{agg}_{build_year}.xlsx'
@@ -205,6 +207,7 @@ DATA_PREPROCESS_PIPELINE:
 MODELING_PIPELINE:
   CONTROL:
     HYPER_PARAMETER_TUNING: False
+    HYPER_PARAMETER_SUMMARY: False
     TRAIN_AND_PREDICT: True
   RANDOM_SEED: 1234
   TRAINING:
@@ -225,7 +228,7 @@ MODELING_PIPELINE:
       ITERATIONS: 1000
       N_TREES: [10, 200]
       MAX_DEPTH_SETTING: ['limit', null]
-      MAX_DEPTH_VALUES: [3, 10]
+      MAX_DEPTH_VALUES: [5, 20]
       MAX_FEATURES: [0.2, 0.4, 0.6, 0.8, 1]
       CV_FOLDS: 10
       HYPERPARAMETER_STORING_FILE: 'hyper_parameter_tuning_{var}_{agg}_{n_fold}_fold_{error}.xlsx'
@@ -241,10 +244,14 @@ MODELING_PIPELINE:
       N_FOLD_EVALUATION: '{n}_fold_{evaluation}'
       ERROR_FOLD_MEAN: '{evaluation}_mean'
       ERROR_FOLD_STD: '{evaluation}_std'
+      HYPERPARAMETER_PLOT_TITLE_MEAN: 'Random Forest MEAN error vs hyperparameter'
+      HYPERPARAMETER_PLOT_TITLE_STD: 'Random Forest STD error vs hyperparameter'
+      HYPERPARAMETER_PLOT_FILE_MEAN: 'Hyperparameter_{parameter}_accuracy_mean_summary.png'
+      HYPERPARAMETER_PLOT_FILE_STD: 'Hyperparameter_{parameter}_accuracy_std_summary.png'
 
   PREDICTION:
     PREDICTION_CLASS: 2019
-    EVALUATION_METRIC: 'mae'
+    EVALUATION_METRIC: 'rmse'
     RELEVANT_COLUMNS_DRAFT_EVALUATION: [
       'name',
       'school',
@@ -254,6 +261,9 @@ MODELING_PIPELINE:
     DRAFT_CLASS_PREDICTIONS_EXCEL: 'draft_class_{year}_predictions_{var}.xlsx'
     DRAFT_CLASS_PREDICTIONS_PLOT: 'draft_class_{year}_predictions_{var}.png'
     FEATURE_IMPORTANCE_EXCEL: 'draft_class_{year}_feature_importance_{var}.xlsx'
+    FEATURE_IMPORTANCE_PLOT_TITLE: 'Random Forest Feature Importance'
+    FEATURE_IMPORTANCE_PLOT_FILE: '{n}_feature_importance_plot.png'
+    FEATURE_IMPORTANCE_MAX_BOX: 5
     FOLDER:
       PLOTS: 'visualizations'
       EXCEL: 'excel'
@@ -272,5 +282,3 @@ FOLDERS:
   HYPERPARAMETER_TUNING: 'hyperparameter_tuning'
   PREDICTIONS_FOLDER: 'predictions'
   
-
-

@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import math
+import time
 
 class BasketDataProcessor(object):
 
@@ -369,8 +370,14 @@ class BasketDataProcessor(object):
 
         else:
 
+            start_time = time.time()
+
             nba_college_merge_df = self.merge_predictor_college()
 
+            #Print Run time
+            print("{step} took {time} minutes".format(step = 'The preprocessed featureset generation step', time = round((time.time() - start_time) / 60, 2)))
+
+        start_time = time.time()
 
         # Get normalized features based on strength of schedule
         nba_college_norm_df = self.norm_features(nba_college_merge_df)
@@ -387,6 +394,9 @@ class BasketDataProcessor(object):
 
         # Save Featureset to excel
         self.save_feature_set(nba_college_norm_df, self.output_featureset_excel_preprocessed)
+
+        #Print Run time
+        print("{step} took {time} minutes".format(step = 'The Feature set imputation step', time = round((time.time() - start_time) / 60, 2)))
 
         return nba_college_norm_df
 

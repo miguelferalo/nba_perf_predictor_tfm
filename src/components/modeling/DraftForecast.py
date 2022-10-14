@@ -11,6 +11,7 @@ import csv
 from sklearn.ensemble import RandomForestRegressor
 import math
 import numpy as np
+import time
 
 class DraftForecast:
 
@@ -66,6 +67,15 @@ class DraftForecast:
     self.feature_importance_excel = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_EXCEL'].format(year = self.draft_class_to_predict, var = self.success_var)
     self.draft_class_predictions_plot = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_PLOT'].format(year = self.draft_class_to_predict, var = self.success_var)
     self.current_year = date.today().year 
+
+    self.hyperparameter_summary_plot_title_mean = config_variables['MODELING_PIPELINE']['TRAINING']['HYPERPARAMETER_TUNING']['HYPERPARAMETER_PLOT_TITLE_MEAN']
+    self.hyperparameter_summary_plot_title_std = config_variables['MODELING_PIPELINE']['TRAINING']['HYPERPARAMETER_TUNING']['HYPERPARAMETER_PLOT_TITLE_STD']
+    self.hyperparameter_summary_plot_file_mean = config_variables['MODELING_PIPELINE']['TRAINING']['HYPERPARAMETER_TUNING']['HYPERPARAMETER_PLOT_FILE_MEAN']
+    self.hyperparameter_summary_plot_file_std = config_variables['MODELING_PIPELINE']['TRAINING']['HYPERPARAMETER_TUNING']['HYPERPARAMETER_PLOT_FILE_STD']
+
+    self.feature_importance_plot_title = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_PLOT_TITLE']
+    self.feature_importance_plot_file = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_PLOT_FILE']
+    self.feature_importance_max_box = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_MAX_BOX'] 
 
   def model_split_cv(self, random_seed):
 
@@ -170,6 +180,8 @@ class DraftForecast:
 
   def hyper_parameter_tuning(self):
 
+    start_time = time.time()
+
     # Check if folder to store results exists
     hyperparameter_tuning_path = os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder)
     if not os.path.exists(hyperparameter_tuning_path):
@@ -197,6 +209,9 @@ class DraftForecast:
     hyper_parameter_df.to_excel(writer, index=False)
     writer.save()
 
+    #Print Run time
+    print("{step} took {time} minutes".format(step = 'The hyeperparameter tunning step', time = round((time.time() - start_time) / 60, 2)))
+
   def hypertuned_to_default_comparison(self, hypertuned_df):
     default_trees = self.default_model_hyperparameters[0]
     default_depth = self.default_model_hyperparameters[1]
@@ -205,12 +220,18 @@ class DraftForecast:
     cv_error_mean_default = cv_error_default[self.error_fold_mean.format(evaluation = self.comparison_to_default_metric)]
     cv_error_std_default = cv_error_default[self.error_fold_std.format(evaluation = self.comparison_to_default_metric)]
 
+    print('The default {error} is {number}'.format(error = self.comparison_to_default_metric, number = round(cv_error_mean_default, 3)))
+    print('The default std {error} is {number}'.format(error = self.comparison_to_default_metric, number = round(cv_error_std_default, 4)))
+
     tuned_trees = hypertuned_df['n_trees'][0]
     tuned_depth = hypertuned_df['max_depth'][0]
     tuned_features = hypertuned_df['max_features'][0]
     cv_error_tuned = self.cross_validation(tuned_trees, tuned_depth, tuned_features, self.comparison_to_default_metric)
     cv_error_mean_tuned = cv_error_tuned[self.error_fold_mean.format(evaluation = self.comparison_to_default_metric)]
     cv_error_std_tuned = cv_error_tuned[self.error_fold_std.format(evaluation = self.comparison_to_default_metric)]
+
+    print('The tuned mean {error} is {number}'.format(error = self.comparison_to_default_metric, number = round(cv_error_mean_tuned, 3)))
+    print('The tuned std {error} is {number}'.format(error = self.comparison_to_default_metric, number = round(cv_error_std_tuned, 4)))
 
     cv_error_mean_improvement_abs = round(cv_error_mean_tuned - cv_error_mean_default, 3)
     cv_error_mean_improvemenet_perc = round(1 - (cv_error_mean_tuned - cv_error_mean_default) / cv_error_mean_default, 3)
@@ -269,6 +290,8 @@ class DraftForecast:
 
   def prediction_draft_order(self, draft_player_names, actuals, predictions):
 
+    start_time = time.time()
+
     pred_error = self.calculate_metric_error(predictions, actuals, self.prediction_error)
 
     # Merge predictions to names
@@ -305,6 +328,9 @@ class DraftForecast:
     plt.title('Draft Class {year} - {var} prediction vs actuals - Mean {error} = {numeric}'.format(year = self.draft_class_to_predict, var = self.success_var, error = self.prediction_error, numeric = str(round(pred_error, 2))))
     plt.savefig(path_to_plot, bbox_inches='tight')
 
+    #Print Run time
+    print("{step} took {time} minutes".format(step = 'The Model Evaluation step', time = round((time.time() - start_time) / 60, 2)))    
+
   def feature_importance(self, random_forest, feature_list):
 
     # Get Importances
@@ -317,13 +343,29 @@ class DraftForecast:
     feature_importances = sorted(feature_importances, key = lambda x: x[1], reverse = True)
 
     # Convert to dataframe and save to excel
-    feature_importance_df = pd.DataFrame(columns = ['Data Column', 'Feature Importance'])
+    feature_importance_df = pd.DataFrame(columns = ['Feature', 'Feature Importance'])
     for data, importance in feature_importances:
-      new_row = {'Data Column': data, 'Feature Importance': importance}
+      new_row = {'Feature': data, 'Feature Importance': importance}
       feature_importance_df = feature_importance_df.append(new_row, ignore_index=True)
 
     path_to_excel = os.path.join(self.top_path, self.data_folder, self.predictions_folder, self.feature_importance_folder, self.feature_importance_excel)
     feature_importance_df.to_excel(path_to_excel, index=False)
+
+    # Create feature importance bar plot
+    feature_importance_df_most_important = feature_importance_df.sort_values('Feature Importance', ascending=False).T.copy()
+    splits = int(np.ceil(len(feature_importance_df_most_important.columns) / self.feature_importance_max_box))
+
+    for split in range(splits):
+
+      featureset_plot_list = feature_importance_df_most_important.columns.to_list()[split * self.feature_importance_max_box: split * self.feature_importance_max_box +  self.feature_importance_max_box]
+      features_plot = feature_importance_df_most_important[featureset_plot_list].copy()
+
+      plt.figure(figsize = (10, 5))
+      plt.bar(features_plot.T['Feature'], features_plot.T['Feature Importance'], color = 'blue', width = 0.4)
+      plt.xlabel('Feature')
+      plt.ylabel('Feature Importance')
+      plt.title(self.feature_importance_plot_title)
+      plt.savefig(os.path.join(self.top_path, self.data_folder, self.predictions_folder, self.feature_importance_folder, self.feature_importance_plot_file.format(n = split)))
 
   def train_and_predict(self):
 
@@ -336,17 +378,56 @@ class DraftForecast:
       n_trees, max_depth, max_features = self.default_model_hyperparameters
       print('Need to perform hyperparameter tuning')
 
-    # Get train sets and split sets based on class to be predicted 
+    # Get train sets and split sets based on class to be predicted
+    start_time = time.time() 
     train_features, test_features, train_labels, test_labels, prediction_names, feature_list = self.model_split_draft_class()
 
     # Fit the model
     rf = self.fit_model(n_trees, max_depth, max_features, train_features, train_labels)
+    #Print Run time
+    print("{step} took {time} minutes".format(step = 'The Model Training step', time = round((time.time() - start_time) / 60, 2)))
 
     # Run Prediction
+    start_time = time.time()
     rf_predictions = rf.predict(test_features)
+    #Print Run time
+    print("{step} took {time} minutes".format(step = 'The Model prediction step', time = round((time.time() - start_time) / 60, 2)))
 
     # Calculate metric error, plot, sort and save
     self.prediction_draft_order(prediction_names, test_labels, rf_predictions)
 
     # Get Feature Importance
     self.feature_importance(rf, feature_list)
+
+  def hyperparameter_tuning_diagnosis(self):
+
+    # Load hyperparameters and return best hyperparameter
+    path_to_hyperparameters = os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder, self.hyperparameter_excel)
+    if os.path.exists(path_to_hyperparameters):
+
+      #Print best parameters
+      self.best_hyperparameter()
+
+      #Plot RMSE and STD plots vs each variable
+      path_to_hyperparameters_df = pd.read_excel(path_to_hyperparameters).fillna(0)
+
+      for parameter in self.hyperparameter_columns:
+
+        plt.figure()
+        plt.plot(path_to_hyperparameters_df[parameter], path_to_hyperparameters_df[self.error_fold_mean.format(evaluation = self.evaluation_metric_model)], linestyle = 'none', marker = 'p')
+        plt.xlabel(parameter)
+        plt.ylabel(self.evaluation_metric_model)
+        plt.title(self.hyperparameter_summary_plot_title_mean)
+        plt.savefig(os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder, self.hyperparameter_summary_plot_file_mean.format(parameter = parameter)))
+
+        plt.figure()
+        plt.plot(path_to_hyperparameters_df[parameter], path_to_hyperparameters_df[self.error_fold_std.format(evaluation = self.evaluation_metric_model)], linestyle = 'none', marker = 'p')
+        plt.xlabel(parameter)
+        plt.ylabel(self.evaluation_metric_model)
+        plt.title(self.hyperparameter_summary_plot_title_std)
+        plt.savefig(os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder, self.hyperparameter_summary_plot_file_std.format(parameter = parameter)))
+
+    else:
+
+      print("Hyperparemeters file - {file} - does not exist". format(file = self.hyperparameter_excel))
+
