@@ -1,0 +1,13 @@
+college
+19508 /cbb/players/chris-van ens-1.html
+38744 /cbb/players/devon-francois-1.html
+38842 /cbb/players/phillip-nolan-1.html
+38964 /cbb/players/alex-budke-1.html
+
+nba
+1317 /players/b/boumtru01.html
+1848 /players/m/mbahalu01.html
+2286 /players/m/moreler01.html
+2407 /players/e/embiijo01.html embiid
+2460 /players/s/siakapa01.html siakam
+2648 /players/h/hutchch01.html
