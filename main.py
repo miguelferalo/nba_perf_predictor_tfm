@@ -6,11 +6,12 @@ from src.components.modeling.DraftForecast import DraftForecast
 ######################## SET A WORKFLOW IN THE PROJECT #################################
 
 ############ PIPELINE TO SCRAPE DATA ############
-if config_variables['FLOW_SWITCH']['WEB_SCRAPPING']:
+if config_variables['FLOW_SWITCH']['WEB_SCRAPING']:
 
+    print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'WEB SCRAPING PIPELINE'))
     basketball_scrapper = BasketScrapper(config_variables=config_variables)
 
-    if config_variables['SCRAPING_VARS']['CONTROL']['COLLEGE_SCRAPPING']:
+    if config_variables['SCRAPING_VARS']['CONTROL']['COLLEGE_SCRAPING']:
 
         #Get Data of college players
         print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'COLLEGE DATA WEB SCRAPING'))
@@ -23,9 +24,12 @@ if config_variables['FLOW_SWITCH']['WEB_SCRAPPING']:
         basketball_scrapper.nba_data_scraping()
         print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'NBA DATA WEB SCRAPING'))
 
+    print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'WEB SCRAPING PIPELINE'))
+
 ############ PIPELINE TO CREATE FEATURESET, IMPUTE, VISUALIZE CORRELATIONS ############
 if config_variables['FLOW_SWITCH']['DATA_PREPROCESSING']:
-    
+
+    print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'DATA PROCESSING PIPELINE'))
     basket_data_prep = BasketDataProcessor(config_variables=config_variables)
 
     #Build Featureset
@@ -45,9 +49,9 @@ if config_variables['FLOW_SWITCH']['DATA_PREPROCESSING']:
     #Visualize Missing Data columns for imputation purposes
     if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_IMPUTATION_VISUALIZER']:
 
-        print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'DATA VISUALIZER'))
-        basket_data_prep.data_visualizer()
-        print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'DATA VISUALIZER'))
+        print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'DATA VISUALIZER IMPUTATION'))
+        basket_data_prep.data_visualizer_imputation()
+        print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'DATA VISUALIZER IMPUTATION'))
 
     #Get a summary of the definitive dataframe
     if config_variables['DATA_PREPROCESS_PIPELINE']['CONTROL']['FEATURESET_VAR_ANALYSIS']:
@@ -55,10 +59,13 @@ if config_variables['FLOW_SWITCH']['DATA_PREPROCESSING']:
         print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'FEATURE SET SUMMARY'))
         basket_data_prep.definitive_featureset_summary()
         print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'FEATURE SET SUMMARY'))
+
+    print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'DATA PROCESSING PIPELINE'))
     
 ############ PIPELINE TO HYPERPARAMETER TUNE, TRAIN AND PREDICT ############
 if config_variables['FLOW_SWITCH']['MODELINING']:
     
+    print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'MODELING PIPELINE'))
     draft_forecast_wizard = DraftForecast(config_variables=config_variables)
 
     #Perform Hyperparameter tuning process
@@ -82,9 +89,4 @@ if config_variables['FLOW_SWITCH']['MODELINING']:
         draft_forecast_wizard.train_and_predict()
         print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'TRAINING, PREDICTIONS AND EVALUATIONR'))
 
-
-
-
-
-
-
+    print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'MODELING PIPELINE'))

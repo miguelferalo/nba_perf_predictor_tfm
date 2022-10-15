@@ -32,11 +32,36 @@ class BasketScrapper(object):
         self.nba_per_min_id = config_variables['SCRAPING_VARS']['NBA']['TABLES_IDS']['PER_MINUTE']
         self.nba_per_poss_id = config_variables['SCRAPING_VARS']['NBA']['TABLES_IDS']['PER_POSS']
         self.nba_advanced_id = config_variables['SCRAPING_VARS']['NBA']['TABLES_IDS']['ADVANCED']
-        
+
+        # Get Table Headers for College Players
+        self.college_per_game_header = config_variables['SCRAPING_VARS']['COLLEGE']['HEADERS']['PER_GAME']
+        self.college_totals_header = config_variables['SCRAPING_VARS']['COLLEGE']['HEADERS']['TOTALS']
+        self.college_per_min_header = config_variables['SCRAPING_VARS']['COLLEGE']['HEADERS']['PER_40_MIN']
+        self.college_per_poss_header = config_variables['SCRAPING_VARS']['COLLEGE']['HEADERS']['PER_100_POSS']
+        self.college_advanced_header = config_variables['SCRAPING_VARS']['COLLEGE']['HEADERS']['ADVANCED']
+
+        # Get Table Headers for NBA Players
+        self.nba_per_game_header = config_variables['SCRAPING_VARS']['NBA']['HEADERS']['PER_GAME']
+        self.nba_totals_header = config_variables['SCRAPING_VARS']['NBA']['HEADERS']['TOTALS']
+        self.nba_per_min_header = config_variables['SCRAPING_VARS']['NBA']['HEADERS']['PER_36_MIN']
+        self.nba_per_poss_header = config_variables['SCRAPING_VARS']['NBA']['HEADERS']['PER_100_POSS']
+        self.nba_advanced_header = config_variables['SCRAPING_VARS']['NBA']['HEADERS']['ADVANCED']
+                
 
     def college_conferences_per_season(self): 
 
-        'Save in a excel all the links for all coferences through selected seasons'
+        """
+            Description:
+                This function scrapes all the different conferences urls for each season specified at the input.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - season_year : dictionary with all the conferences url per season.
+                - Saves the dictionary in an excel file.
+            
+        """
 
         season_year = {}
 
@@ -99,7 +124,20 @@ class BasketScrapper(object):
 
     def find_colleges_links(self, season_links):
 
-        'Save all the colleges urls for all the conferences in the input dictionary'
+        """
+            Description:
+                This function scrapes all the colleges url within the specified conferences and season
+                at the input.
+
+            Input Parameters:
+                - config.yaml
+                - season_links: dictionary with all the urls of conferences which need to be scraped
+
+            Return:
+                - season_links: dictionaty with all the links to colleges per season.
+                - Saves the dictionary in an excel file.
+            
+        """
 
         for year in season_links:
 
@@ -177,6 +215,21 @@ class BasketScrapper(object):
 
     def get_players_links(self, season_links):
 
+        """
+            Description:
+                This function scrapes all the players ursl within the specified colleges and seasons
+                at the input.
+
+            Input Parameters:
+                - config.yaml
+                - season_links: dictionary with all the urls of colleges which need to be scraped.
+
+            Return:
+                - players_links: dictionaty with all the links to players per season.
+                - Saves the dictionary in an excel file.
+            
+        """
+
         players_links = []
         player_names = []
         for year in season_links:
@@ -237,7 +290,21 @@ class BasketScrapper(object):
 
     def college_advanced_table_formatter(self, data_list, standard_length):
 
-        'Fix problems with older collge data not having the same structure as the recent players'
+        """
+            Description:
+                The same table type for college data can have different columns depending on the season.
+                Most recent seasons contain more data columns. This function tackles this problem and 
+                make sure all the tables have the same structure.
+
+            Input Parameters:
+                - config.yaml
+                - data_list: list containing the data of a season for a player
+                - standard_length: int - the length that the row is supposed to have to standardize season data.
+
+            Return:
+                - data_formatted: list containing the player data for the season fixed to contain the correct number of values.
+            
+        """
 
         data_formatted = []
         for index, data in enumerate(data_list):
@@ -257,7 +324,22 @@ class BasketScrapper(object):
 
     def college_get_table_data(self, soup, table_id, general_data, output_list, pointer_3_year):
 
-        'Pull the data from the table'
+        """
+            Description:
+                Scrape all the college data required for a specific table.
+
+            Input Parameters:
+                - config.yaml
+                - soup: beatifulsoup object containing all the data found at the given html.
+                - table_id: the data type table to scrape the data (per_game, totals, per_36_minutes, per_100_possesions or advancded)
+                - general_data: list containing data of the player shared across all tables such as Name or Height.
+                - output_list: the specific data list where each row of information is stored (list of lists).
+                - pointer_3_year: int - the first yeat where the 3 point line was implemented at college.
+
+            Return:
+                - output_list: the specific data list where each row of information is stored (list of lists).
+            
+        """
 
         # get table player_per game
         table = soup.find('table', id=table_id)
@@ -287,7 +369,28 @@ class BasketScrapper(object):
 
     def player_data_college_reference(self, player_url, id, per_game_list, total_list, per_40_min_list, per_100_poss_list, advanced_list):
 
-        'Get all the possible data from college players'
+        """
+            Description:
+                Function to scrape all the data for the input player
+
+            Input Parameters:
+                - config.yaml
+                - player_url: the url for the player whose data wants to be scraped.
+                - id: the id given to the player. This id is unique for each player.
+                - per_game_list: list where the per game data is stored.
+                - total_list: list where the total data is stored.
+                - per_40_min_list: list where the per 40 minutes data is stored.
+                - per_100_poss_list: list where the per 100 possessions data is stored.
+                - per_advanced_list40_min_list: list where the advanced data is stored.
+
+            Return:
+                - per_game_list: list where the per game data is stored.
+                - total_list: list where the total data is stored.
+                - per_40_min_list: list where the per 40 minutes data is stored.
+                - per_100_poss_list: list where the per 100 possessions data is stored.
+                - per_advanced_list40_min_list: list where the advanced data is stored.
+            
+        """
 
         global_url = self.config['SCRAPING_VARS']['COLLEGE']['COLLEGE_REFERENCE_BASE_URL']
         url = global_url + player_url
@@ -367,32 +470,30 @@ class BasketScrapper(object):
 
     def get_excel_raw_college(self, players_links):
 
-        'Get all teh data from the players defined in the input list of URL'
+        """
+            Description:
+                Function to get all the data for all the players specified at the input
 
-        per_game_headers = ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'unknown', 'strength_of_schedule']
+            Input Parameters:
+                - config.yaml
+                - player_links: list of urls with all the players that are required to scrape.
 
-        total_headers = ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
 
-        per_40_headers = ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+            Return:
+                - per_game_df: pandas dataframe containing all the players and seasons per game data.
+                - total_df: pandas dataframe containing all the players and seasons total data.
+                - per_40_min_df: pandas dataframe containing all the players and seasons per 40 minutes data.
+                - per_100_poss_df: pandas dataframe containing all the players and seasons per 100 possessions data.
+                - advanced_df: pandas dataframe containing all the players and seasons advanced data.  
+                - Save all dataframes in one excel file (multiple sheets).       
+        """
 
-        per_100_headers = ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'unknown', 'offensive_rating', 'defensive_rating']
-
-        advanced_headers = ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year', 'season',
-                            'school', 'conf', 'games', 'games_started', 'mp', 'per', 'ts%', 'efg%', '3par', 'ftr', 'pprod', 'orb%',
-                            'drb%', 'trb%', 'ast%', 'stl%', 'blk%', 'tov%', 'usg%', 'unknown', 'ows', 'dws', 'ws', 'ws/40', 'unknown',
-                            'obpm', 'dbpm', 'bpm']
+        # Get dataframes headers
+        per_game_headers = self.college_per_game_header
+        total_headers = self.college_totals_header
+        per_40_headers = self.college_per_min_header
+        per_100_headers = self.college_per_poss_header
+        advanced_headers = self.college_advanced_header
 
 
         per_game_list = []
@@ -401,7 +502,7 @@ class BasketScrapper(object):
         per_100_poss_list = []
         advanced_list = []
 
-        print('COLLEGE - Start scrapping data')
+        print('COLLEGE - Start scraping data')
 
         total_players = len(players_links)
         percentage_status = 0.10
@@ -472,7 +573,18 @@ class BasketScrapper(object):
 
     def load_player_links(self, excel_path):
 
-        'Load the file containing the links of the players we would like scrape'
+        """
+            Description:
+                Function to load the players links from an excel file
+
+            Input Parameters:
+                - config.yaml
+                - excel_path: path to the excel which contains the players urls.
+
+
+            Return:
+                - links: list with all the urls from the players      
+        """
 
         df = pd.read_excel(excel_path)
 
@@ -482,7 +594,20 @@ class BasketScrapper(object):
 
     def college_data_scraping(self):
 
-        'Run a logic to scrape the data from university basketball players'
+        """
+            Description:
+                Function to scrape college players data from College Reference.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - per_game_df: pandas dataframe containing all the players and seasons per game data.
+                - total_df: pandas dataframe containing all the players and seasons total data.
+                - per_40_min_df: pandas dataframe containing all the players and seasons per 40 minutes data.
+                - per_100_poss_df: pandas dataframe containing all the players and seasons per 100 possessions data.
+                - advanced_df: pandas dataframe containing all the players and seasons advanced data.        
+        """
 
         start_time = time.time()
 
@@ -522,7 +647,18 @@ class BasketScrapper(object):
 
     def get_nba_players_links(self):
 
-        'Get a list with all the players in nba'
+        """
+            Description:
+                This function scrapes all the NBA players urls specified in the input parameters.
+
+            Input Parameters:
+                - config.yaml.
+
+            Return:
+                - players_links: dictionaty with all the links to players per season.
+                - Saves the dictionary in an excel file.
+            
+        """
 
         root_url = self.config['SCRAPING_VARS']['NBA']['BASKERBALL_REFERENCE_BASE_URL']
 
@@ -575,9 +711,27 @@ class BasketScrapper(object):
 
         writer.save()
 
-        return players_df['player_url']
+        players_links = players_df['player_url']
+
+        return players_links
 
     def nba_get_table_data(self, soup, table_id, general_data, output_list, pointer_3_year):
+
+        """
+            Description:
+                Get all the data from a specific data type table.
+
+            Input Parameters:
+                - config.yaml
+                - soup: beatifulsoup object containing all the data found at the given html.
+                - table_id: the data type table to scrape the data (per_game, totals, per_36_minutes, per_100_possesions or advancded)
+                - general_data: list containing data of the player shared across all tables such as Name or Height.
+                - output_list: the specific data list where each row of information is stored (list of lists).
+                - pointer_3_year: int - the first yeat where the 3 point line was implemented at college.
+
+            Return:
+                - output_list: the specific data list where each row of information is stored (list of lists).       
+        """
 
         'Pull the data from the table'
 
@@ -607,7 +761,27 @@ class BasketScrapper(object):
 
     def player_data_nba_reference(self, player_url, id, per_game_list, total_list, per_40_min_list, per_100_poss_list, advanced_list):
 
-        'Get all the possible data from college players'
+        """
+            Description:
+                Function to get scrape all the data form the input NBA player
+
+            Input Parameters:
+                - config.yaml
+                - player_url: url of the NBA player
+                - id: int - unique id for the NBA player
+                - per_game_list: list containing all the per game data for the player.
+                - total_list: list containing all the total data for the player.
+                - per_40_min_list: list containing all the per 40 minutes data for the player.
+                - per_100_poss_list: list containing all the per 100 possessions data for the player.
+                - advanced_list: list containing all the advanced data for the player.
+
+            Return:
+                - per_game_list: list containing all the per game data for the player.
+                - total_list: list containing all the total data for the player.
+                - per_40_min_list: list containing all the per 40 minutes data for the player.
+                - per_100_poss_list: list containing all the per 100 possessions data for the player.
+                - advanced_list: list containing all the advanced data for the player.       
+        """
 
         global_url = self.config['SCRAPING_VARS']['NBA']['BASKERBALL_REFERENCE_BASE_URL']
         url = global_url + player_url
@@ -622,7 +796,6 @@ class BasketScrapper(object):
         #Get player info
         info = soup.find(id = 'info')
         player_name = info.find_all('span')[0].get_text()
-        info_draft = [data.getText() for data in info.find_all('strong')]
 
         info_general = [data.get_text().replace('\n', '').replace(' ', '') for index, data in enumerate(info.find_all('p'))]
 
@@ -668,32 +841,29 @@ class BasketScrapper(object):
     
     def get_excel_raw_nba(self, players_links):
 
-        'Get all the data from the NBA players defined in the input list of URL'
+        """
+            Description:
+                Function to scrape NBA players data from Basketball Reference.
 
-        per_game_headers = ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '3p', '3pa', '3p%', '2p', '2pa', '2p%', 'efg%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+            Input Parameters:
+                - config.yaml
+                - players_links: list containing all the NBA players urls to be scrapped.
 
-        total_headers = ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '3p', '3pa', '3p%', '2p', '2pa', '2p%', 'efg%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+            Return:
+                - per_game_df: pandas dataframe containing all the players and seasons per game data.
+                - total_df: pandas dataframe containing all the players and seasons total data.
+                - per_36_min_df: pandas dataframe containing all the players and seasons per 40 minutes data.
+                - per_100_poss_df: pandas dataframe containing all the players and seasons per 100 possessions data.
+                - advanced_df: pandas dataframe containing all the players and seasons advanced data.  
+                - Save all the dataframes in one excel (multiple sheets).      
+        """
 
-        per_36_headers = ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '3p', '3pa', '3p%', '2p', '2pa', '2p%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
-
-        per_100_headers = ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
-                            'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
-                            '3p', '3pa', '3p%', '2p', '2pa', '2p%','ft', 'fta', 'ft%', 'tbr', 
-                            'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'unknown', 'offensive_rating', 'defensive_rating']
-
-        advanced_headers = ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year', 'season',
-                            'age', 'team', 'league', 'position', 'games', 'mp', 'per', 'ts%', '3par', 'ftr', 'orb%',
-                            'drb%', 'trb%', 'ast%', 'stl%', 'blk%', 'tov%', 'usg%', 'unknown', 'ows', 'dws', 'ws', 'ws/48', 'unknown',
-                            'obpm', 'dbpm', 'bpm', 'vorp']
+        #Get NBA dataframes headers
+        per_game_headers = self.nba_per_game_header
+        total_headers = self.nba_totals_header
+        per_36_headers = self.nba_per_min_header
+        per_100_headers = self.nba_per_poss_header
+        advanced_headers = self.nba_advanced_header
 
 
         per_game_list = []
@@ -702,7 +872,7 @@ class BasketScrapper(object):
         per_100_poss_list = []
         advanced_list = []
 
-        print('NBA - Start scrapping data')
+        print('NBA - Start scraping data')
 
         total_players = len(players_links)
         percentage_status = 0.10
@@ -771,11 +941,22 @@ class BasketScrapper(object):
 
         return per_game_df, total_df, per_36_min_df, per_100_poss_df, advanced_df
 
-
-
     def nba_data_scraping(self):
 
-        'scrape data from nba players'
+        """
+            Description:
+                Function to scrape NBA players data from Basketball Reference.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - per_game_df: pandas dataframe containing all the players and seasons per game data.
+                - total_df: pandas dataframe containing all the players and seasons total data.
+                - per_36_min_df: pandas dataframe containing all the players and seasons per 40 minutes data.
+                - per_100_poss_df: pandas dataframe containing all the players and seasons per 100 possessions data.
+                - advanced_df: pandas dataframe containing all the players and seasons advanced data.        
+        """
 
         start_time = time.time()
 

@@ -65,7 +65,8 @@ class DraftForecast:
     self.success_var = '{var}_{agg}'.format(var = self.nba_success_var, agg = self.success_var_agg)
     self.draft_class_predictions_excel = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_EXCEL'].format(year = self.draft_class_to_predict, var = self.success_var)
     self.feature_importance_excel = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_EXCEL'].format(year = self.draft_class_to_predict, var = self.success_var)
-    self.draft_class_predictions_plot = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_PLOT'].format(year = self.draft_class_to_predict, var = self.success_var)
+    self.draft_class_predictions_plot_1 = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_PLOT_1'].format(year = self.draft_class_to_predict, var = self.success_var)
+    self.draft_class_predictions_plot_2 = config_variables['MODELING_PIPELINE']['PREDICTION']['DRAFT_CLASS_PREDICTIONS_PLOT_2'].format(year = self.draft_class_to_predict)
     self.current_year = date.today().year 
 
     self.hyperparameter_summary_plot_title_mean = config_variables['MODELING_PIPELINE']['TRAINING']['HYPERPARAMETER_TUNING']['HYPERPARAMETER_PLOT_TITLE_MEAN']
@@ -78,6 +79,21 @@ class DraftForecast:
     self.feature_importance_max_box = config_variables['MODELING_PIPELINE']['PREDICTION']['FEATURE_IMPORTANCE_MAX_BOX'] 
 
   def model_split_cv(self, random_seed):
+
+    """
+      Description:
+          This function splits the feature set into training and test sets for the cross validation process
+
+      Input Parameters:
+          - config.yaml
+          - random_seed: int - random seed to ensure results can be reproduced
+
+      Return:
+          - train_features
+          - test_features
+          - train_labels
+          - test_labels
+    """
 
     # Load df
     path_to_featureset_excel = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel_preprocessed)
@@ -100,6 +116,17 @@ class DraftForecast:
 
   def hyperparameter_df_generator(self):
 
+    """
+      Description:
+          This function generates the dataframe where the hyperparameters will be stored
+
+      Input Parameters:
+          - config.yaml
+
+      Return:
+          - hyper_parameter_df: dataframe where the hyper parameters will be stored
+    """
+
     fieldnames = []
 
     for column in self.hyperparameter_columns:
@@ -117,6 +144,22 @@ class DraftForecast:
 
   def fit_model(self, n_trees, max_depth, max_features, train_features, train_labels):
 
+    """
+      Description:
+          This function configurates the model (hyperparameters) and train the model
+
+      Input Parameters:
+          - config.yaml
+          - n_trees: number of trees of the Random Forest.
+          - max_depth: maximum depth of the trees.
+          - max_features: maximum number of features used per tree.
+          - train_features
+          - train_labels
+
+      Return:
+          - rf: random forest model (trained)
+    """
+
     rf = RandomForestRegressor(n_estimators=n_trees, max_depth=max_depth, max_features = max_features, random_state = self.random_seed)
 
     # Train the model on training data
@@ -126,6 +169,19 @@ class DraftForecast:
 
   def calculate_metric_error(self, predictions, actuals, error_meeasurement):
 
+    """
+      Description:
+          This function calculates the error between the prediction and the test labels (actuals).
+
+      Input Parameters:
+          - config.yaml
+          - predictions: list containing the predictions from the random forest.
+          - actuals: list containing the actual values (test labels).
+          - error_meeasurement: string which specifies which error needs to be calculated.
+
+      Return:
+          - error_metric: float - the value of the error
+    """
 
     if error_meeasurement == 'rmse':
 
@@ -144,9 +200,23 @@ class DraftForecast:
 
     return error_metric
     
-
-
   def cross_validation(self, n_trees, max_depth, max_features, evaluation_metric):
+
+    """
+      Description:
+          This function performs the cross validation of the model.
+
+      Input Parameters:
+          - config.yaml
+          - n_trees: the number of trees of the random forest.
+          - max_depth: the maximum depth of the tree.
+          - max_features: the maximum features used per tree.
+          - evaluation_metric: the error metric to be evaluated at the cross validation.
+
+      Return:
+          - error_results_dict: dictionary - contains the data of the cross validation (RM model parameters, each fold error,
+                                              mean error across the folds and standandard deviation across the folds)
+    """
 
     evaluation_metric_fold_array = []
 
@@ -179,6 +249,17 @@ class DraftForecast:
     return error_results_dict
 
   def hyper_parameter_tuning(self):
+
+    """
+      Description:
+          This function performs the hyperparameter tuning process
+
+      Input Parameters:
+          - config.yaml
+
+      Return:
+          - Saves into an excel all the hyperparameter iterations results.
+    """
 
     start_time = time.time()
 
@@ -213,6 +294,20 @@ class DraftForecast:
     print("{step} took {time} minutes".format(step = 'The hyeperparameter tunning step', time = round((time.time() - start_time) / 60, 2)))
 
   def hypertuned_to_default_comparison(self, hypertuned_df):
+
+    """
+      Description:
+          This function compares the performance of the best model found through hyperparameter tuning
+          and the default Random Forest.
+
+      Input Parameters:
+          - config.yaml
+          - hypertuned_df: the dataframe containing all the hyperparameter tunin iterations results.
+
+      Return:
+          - Prints on the console metrics comparing the performance of the hypertuned vs default Random Forests
+    """
+
     default_trees = self.default_model_hyperparameters[0]
     default_depth = self.default_model_hyperparameters[1]
     default_features = self.default_model_hyperparameters[2]
@@ -243,8 +338,20 @@ class DraftForecast:
 
     print('The hyperparameter tuning ({trees}, {depth}, {features}) reduced the std {error} in predicting {var}_{agg} in {perc}% ({abs})'.format(trees = tuned_trees, depth = tuned_depth, features = tuned_features, error = self.comparison_to_default_metric,var = self.nba_success_var, agg = self.success_var_agg, perc = cv_error_std_improvemenet_perc, abs = cv_error_std_improvement_abs))
 
-
   def best_hyperparameter(self):
+
+    """
+      Description:
+          Function to find the best hyperparameters from the hyperparameter tuning process
+
+      Input Parameters:
+          - config.yaml
+
+      Return:
+          - n_trees: the number of trees of the random forest.
+          - max_depth: the maximum depth of the tree.
+          - max_features: the maximum features used per tree.
+    """
 
     # Load hyperparameters
     path_to_hyperparameters = os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder, self.hyperparameter_excel)
@@ -262,11 +369,29 @@ class DraftForecast:
     # Calculate how much better the predictions from hypertuned are to default
     self.hypertuned_to_default_comparison(top_hyperparameters_df)
 
+    n_trees = top_hyperparameters_df['n_trees'][0]
+    max_depth = top_hyperparameters_df['max_depth'][0]
+    max_features = top_hyperparameters_df['max_features'][0]
 
-    return top_hyperparameters_df['n_trees'][0], top_hyperparameters_df['max_depth'][0], top_hyperparameters_df['max_features'][0]
-
+    return n_trees, max_depth, max_features
 
   def model_split_draft_class(self):
+
+    """
+      Description:
+          Function to splits the featureset into train and predict sets based on the Draft class to predict
+
+      Input Parameters:
+          - config.yaml
+
+      Return:
+          - train_features
+          - test_features
+          - train_labels
+          - test_labels
+          - prediction_names: names of the players which will be predicted.
+          - feature_list: list with the features names which were used in training.
+    """
 
     # Load df
     path_to_featureset_excel = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel_preprocessed)
@@ -290,6 +415,20 @@ class DraftForecast:
 
   def prediction_draft_order(self, draft_player_names, actuals, predictions):
 
+    """
+      Description:
+          Function to save the draft predictions into an excel and get visualizations of the predictions
+
+      Input Parameters:
+          - config.yaml
+          - draft_player_names: the names of the players which are predicted.
+          - actuals: the predict labels.
+          - predictions: the predictions from the random forest.
+
+      Return:
+          - Saves a excel with the Draft prediction results and several plots/visualizations.
+    """
+
     start_time = time.time()
 
     pred_error = self.calculate_metric_error(predictions, actuals, self.prediction_error)
@@ -309,6 +448,20 @@ class DraftForecast:
     draft_player_names['prediction_diff_to_actual'] = draft_player_names['draft_actual_ws'] - draft_player_names['draft_prediction_ws']
     draft_player_names['nba_gms_diff_to_actual'] = draft_player_names['draft_actual_ws'] - draft_player_names['draft_actual']
 
+    
+    # Print errors ws_mean
+    mse = np.square(np.subtract(draft_player_names['ws_mean'], draft_player_names['rf_prediction'])).mean()
+    rmse = math.sqrt(mse)
+    print('The RMSE of the predictions is {rmse}'.format(rmse = rmse))
+
+    mae = abs(np.subtract(draft_player_names['ws_mean'], draft_player_names['rf_prediction'])).mean()
+    print('The MAE of the predictions is {mae}'.format(mae = mae))
+      
+    diff = np.subtract(draft_player_names['ws_mean'], draft_player_names['rf_prediction'])
+    abs_perc_error = [abs(diff[row]/ actuals.to_numpy()[row]) if abs(actuals.to_numpy()[row]) >= 0.1 else abs(diff[row]/ 0.1) for row in range(len(diff))]
+    mape = np.mean(abs_perc_error) * 100
+    print('The MAPE of the predictions is {mape}'.format(mape = mape))
+
 
     # Save predictions
     output_directory = os.path.join(self.top_path, self.data_folder, self.predictions_folder)
@@ -317,21 +470,48 @@ class DraftForecast:
     writer = pd.ExcelWriter(path_to_excel, engine='xlsxwriter') 
     draft_player_names.to_excel(writer, index=False)
     writer.save()
-    # Save figure
-    path_to_plot = os.path.join(output_directory, self.predictions_plots_folder, self.draft_class_predictions_plot)
+    # Save figure - part 1
+    path_to_plot = os.path.join(output_directory, self.predictions_plots_folder, self.draft_class_predictions_plot_1)
+    draft_player_names = draft_player_names.sort_values(self.success_var, ascending = False).reset_index(drop = True).copy()
     plt.figure()
-    plt.plot(draft_player_names['draft_prediction_ws'], draft_player_names['rf_prediction'], label = 'model prediction')
-    plt.plot(draft_player_names['draft_prediction_ws'], draft_player_names[self.success_var], label = 'actual')
-    plt.xlabel('draft prediction')
+    plt.plot(draft_player_names.index, draft_player_names['rf_prediction'], label = 'model prediction')
+    plt.plot(draft_player_names.index, draft_player_names[self.success_var], label = 'actual')
+    plt.xlabel('Players sorted by Actual Win Shares')
     plt.ylabel(self.success_var)
     plt.legend()
     plt.title('Draft Class {year} - {var} prediction vs actuals - Mean {error} = {numeric}'.format(year = self.draft_class_to_predict, var = self.success_var, error = self.prediction_error, numeric = str(round(pred_error, 2))))
+    plt.savefig(path_to_plot, bbox_inches='tight')
+
+    # Save figure - part 2
+    path_to_plot = os.path.join(output_directory, self.predictions_plots_folder, self.draft_class_predictions_plot_2)
+    draft_player_names = draft_player_names.sort_values('draft_prediction_ws').copy()
+    plt.figure()
+    plt.plot(draft_player_names['draft_prediction_ws'], draft_player_names[self.success_var], label = 'Predictions Draft Order')
+    draft_player_names = draft_player_names.sort_values('draft_actual').copy()
+    plt.plot(draft_player_names['draft_actual'], draft_player_names[self.success_var], label = 'NBA Teams Draft Order (Actual)')
+    plt.xlabel('Draft Order')
+    plt.ylabel(self.success_var)
+    plt.legend()
+    plt.title('Draft Class {year} - NBA Picks WS vs Model Picks WS'.format(year = self.draft_class_to_predict))
     plt.savefig(path_to_plot, bbox_inches='tight')
 
     #Print Run time
     print("{step} took {time} minutes".format(step = 'The Model Evaluation step', time = round((time.time() - start_time) / 60, 2)))    
 
   def feature_importance(self, random_forest, feature_list):
+
+    """
+      Description:
+          Function to analyzes the feature importance of the generated Random forest
+
+      Input Parameters:
+          - config.yaml
+          - random_forest: random forest model (trained).
+          - feature_list: a list with the name of all the features used to train the model.
+
+      Return:
+          - Saves a excel with the feature importance data from the Random forest and sevaral plots to visualize the feature importance.
+    """
 
     # Get Importances
     importances = (random_forest.feature_importances_)
@@ -369,6 +549,17 @@ class DraftForecast:
 
   def train_and_predict(self):
 
+    """
+      Description:
+          Function to train the model and to make the predictions of the NBA class
+
+      Input Parameters:
+          - config.yaml
+
+      Return:
+          - It does not return any object, it calls other functions.
+    """
+
     # Load hyperparameters and return best hyperparameter
     path_to_hyperparameters = os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder, self.hyperparameter_excel)
     if os.path.exists(path_to_hyperparameters):
@@ -401,6 +592,17 @@ class DraftForecast:
 
   def hyperparameter_tuning_diagnosis(self):
 
+    """
+      Description:
+          Function to analyze the results obtained from the hyper parameter tuning process.
+
+      Input Parameters:
+          - config.yaml
+
+      Return:
+          - Saves several plots to understand how the hyperparameters affect the performance of the Random Forest.
+    """
+
     # Load hyperparameters and return best hyperparameter
     path_to_hyperparameters = os.path.join(self.top_path, self.data_folder, self.hyperparameter_folder, self.hyperparameter_var_folder, self.hyperparameter_excel)
     if os.path.exists(path_to_hyperparameters):
@@ -430,4 +632,3 @@ class DraftForecast:
     else:
 
       print("Hyperparemeters file - {file} - does not exist". format(file = self.hyperparameter_excel))
-

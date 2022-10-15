@@ -86,6 +86,17 @@ class BasketDataProcessor(object):
 
     def nba_df_filter(self):
 
+        """
+            Description:
+                This function preprocess the NBA raw data from players.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - nba_df_rookie : dataframe containing the data from the NBA rookies.
+        """
+
         path_to_nba_excel = os.path.join(self.top_path, self.data_folder, self.nba_raw_folder, self.nba_raw_excel)
 
         # Load df
@@ -106,6 +117,20 @@ class BasketDataProcessor(object):
         return nba_df_rookie
 
     def college_specific_data_columns(self, college_last_df, college_df, columns_spec):
+
+        """
+            Description:
+                This function performs specific college features generation.
+
+            Input Parameters:
+                - config.yaml
+                - college_last_df: dataframe containing the preprocessed college players data.
+                - college_df: dataframe containing the college players raw data.
+                - columns_spec: list of the columns/features which need to be generated.
+
+            Return:
+                - college_last_df: dataframe containing the preprocessed college players data.
+        """
 
         # Drop duplicates
         college_last_df = college_last_df.drop_duplicates(subset=['id'], keep='last')
@@ -167,6 +192,18 @@ class BasketDataProcessor(object):
 
     def college_df_loader(self, data_type):
 
+        """
+            Description:
+                This function loads the specific college data dataframe.
+
+            Input Parameters:
+                - config.yaml
+                - data_type: string specifying the dataframe to be loaded (per_game, totals, ...)
+
+            Return:
+                - college_last_df: dataframe containing the preprocessed college players data.
+        """
+
         specific_vars = self.college_spec_data[data_type]
 
         # Load df
@@ -187,9 +224,18 @@ class BasketDataProcessor(object):
 
         return college_df_last
 
-
-
     def college_filter_dataframe(self):
+
+        """
+            Description:
+                This function preprocess the College raw data from players.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - college_global_df: dataframe containing the preprocessed college players data from all data types (per_game, advandec...).
+        """
 
         college_dataframe_list = []
 
@@ -249,8 +295,19 @@ class BasketDataProcessor(object):
 
         return college_global_df
         
-
     def merge_predictor_college(self):
+
+        """
+            Description:
+                This function creates the raw featureset. It merges the features (college data) and label (NBA data).
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - nba_college_merge_df: dataframe containing the model raw featureset.
+                - Saves the raw featureset into an excel
+        """
 
         # Get nba dataframe filtered
         nba_drafted_df = self.nba_df_filter()
@@ -271,6 +328,18 @@ class BasketDataProcessor(object):
 
     def norm_features(self, feature_set):
 
+        """
+            Description:
+                This function normalized specific features to take into account the strength of the schedule of different players.
+
+            Input Parameters:
+                - config.yaml
+                - feature_set: the model raw featureset
+
+            Return:
+                - feature_set: the model raw featureset
+        """
+
         # Get normalizing var and normalize it from 0 to 1
         normalizer =(feature_set[self.norm_var] - feature_set[self.norm_var].min())/(feature_set[self.norm_var].max() - feature_set[self.norm_var].min())
 
@@ -281,6 +350,18 @@ class BasketDataProcessor(object):
         return feature_set
 
     def outlier_corrector(self, featureset):
+
+        """
+            Description:
+                This function is used to detect and impute extreme outliers values.
+
+            Input Parameters:
+                - config.yaml
+                - featureset: the model raw featureset
+
+            Return:
+                - featureset: the model raw featureset
+        """
 
         # Get variables to correct outliers
         vars_to_correct = []
@@ -309,6 +390,19 @@ class BasketDataProcessor(object):
         return featureset
 
     def missing_values_imputation(self, df):
+
+        """
+            Description:
+                This function is used to perform the dataframe imputation. Since it was observed that there was a stong
+                linear correlation between features, a linear regression is implemented to impute missing values.
+
+            Input Parameters:
+                - config.yaml
+                - df: the model featureset
+
+            Return:
+                - df: the model featureset
+        """
 
         # Get a missing values dictionary
         missing_values_dict = {}
@@ -362,6 +456,18 @@ class BasketDataProcessor(object):
 
     def build_featureset(self):
 
+        """
+            Description:
+                This function builds the definitive feature set of the model.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - nba_college_norm_df: the model definitive featureset
+                - Saves the definitive featureset into an excel
+        """
+
         excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel)
 
         if os.path.exists(excel_path):
@@ -402,6 +508,19 @@ class BasketDataProcessor(object):
 
     def save_feature_set(self, df, feature_set_name):
 
+        """
+            Description:
+                This function saves the feature set in excel
+
+            Input Parameters:
+                - config.yaml
+                - df: the pandas feature set.
+                - feature_set_name: the name of the feature set
+
+            Return:
+                - Saves featureset into an excel
+        """
+
         excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, feature_set_name)
 
         writer = pd.ExcelWriter(excel_path, engine='xlsxwriter') 
@@ -409,6 +528,17 @@ class BasketDataProcessor(object):
         writer.save()
 
     def get_correlation_plots(self):
+
+        """
+            Description:
+                This function creates files to analyze and visualize the correlation between the features and the label.
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - Saves several plots and excels containing information about the features correlation to the label
+        """
 
         excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel_preprocessed)
 
@@ -498,7 +628,18 @@ class BasketDataProcessor(object):
 
             print('Featureset {featureset} does not exist, build it first!'.format(featureset = self.output_featureset_excel))
 
-    def data_visualizer(self):
+    def data_visualizer_imputation(self):
+
+        """
+            Description:
+                This function creates visualizations on the most correlated features to the ones with missing values
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - Saves the plots which shows the correlation between features and missing values features.
+        """
 
         feature_set_excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel)
         na_values_excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_na_values_diagnosis)
@@ -536,7 +677,7 @@ class BasketDataProcessor(object):
                 plt.plot(featureset[highest_correlated_var], featureset[na_column], linestyle = 'none', marker = 'p')
                 plt.xlabel(highest_correlated_var)
                 plt.ylabel(na_column)
-                plt.title(self.plot_3_title.format(corr = str(round(highest_correlated_corr, 2)) , y = highest_correlated_var.upper(), x = na_column.upper()))
+                plt.title(self.plot_3_title.format(corr = str(round(highest_correlated_corr, 2)) , x = highest_correlated_var.upper(), y = na_column.upper()))
                 plt.savefig(path_to_output_plot, bbox_inches='tight')
 
             # Plot Visualization of 3pt var
@@ -575,8 +716,18 @@ class BasketDataProcessor(object):
 
             print('Both Files do not exist')
 
-
     def definitive_featureset_summary(self):
+
+        """
+            Description:
+                This function produces a summary of the featureset
+
+            Input Parameters:
+                - config.yaml
+
+            Return:
+                - Saves plots and excel which summarizes the data of the feature set
+        """
 
         feature_set_def_excel_path = os.path.join(self.top_path, self.data_folder, self.featureset_folder, self.output_featureset_excel_preprocessed)
 
@@ -632,7 +783,6 @@ class BasketDataProcessor(object):
                     sns.boxplot(x="variable", y="value", data=pd.melt(reduced_df))
                     plt.title(self.boxplot_title)
                     plt.savefig(path_to_output_boxplot, bbox_inches='tight')
-
 
         else:
 

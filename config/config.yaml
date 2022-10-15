@@ -1,6 +1,6 @@
 FLOW_SWITCH:
-  WEB_SCRAPPING: False
-  DATA_PREPROCESSING: False
+  WEB_SCRAPING: False
+  DATA_PREPROCESSING: True
   MODELINING: True
 
 LOGGING_MESSAGE:
@@ -9,7 +9,7 @@ LOGGING_MESSAGE:
 
 SCRAPING_VARS:
   CONTROL:
-    COLLEGE_SCRAPPING: True
+    COLLEGE_SCRAPING: True
     NBA_SCRAPING: True
   COLLEGE:
     START_YEAR: 1987
@@ -25,6 +25,31 @@ SCRAPING_VARS:
       PER_MINUTE: 'players_per_min'
       PER_POSS: 'players_per_poss'
       ADVANCED: 'players_advanced'
+    HEADERS:
+      PER_GAME: ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                  'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                  '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
+                  'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'unknown', 'strength_of_schedule']
+
+      TOTALS: ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+              'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+              '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
+              'ast', 'stl', 'blk', 'tov', 'pf', 'pts'] 
+
+      PER_40_MIN: ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                    'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                    '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'tbr', 
+                    'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+          
+      PER_100_POSS: ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                      'season', 'school', 'conf', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                      '2p', '2pa', '2p%', '3p', '3pa', '3p%', 'ft', 'fta', 'ft%', 'tbr', 
+                      'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'unknown', 'offensive_rating', 'defensive_rating']
+
+      ADVANCED: ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year', 'season',
+                  'school', 'conf', 'games', 'games_started', 'mp', 'per', 'ts%', 'efg%', '3par', 'ftr', 'pprod', 'orb%',
+                  'drb%', 'trb%', 'ast%', 'stl%', 'blk%', 'tov%', 'usg%', 'unknown', 'ows', 'dws', 'ws', 'ws/40', 'unknown',
+                  'obpm', 'dbpm', 'bpm']
   NBA:
     START_YEAR: 1987
     END_YEAR: 2022
@@ -43,13 +68,38 @@ SCRAPING_VARS:
       PER_MINUTE: 'per_minute'
       PER_POSS: 'per_poss'
       ADVANCED: 'advanced'
+    HEADERS:
+      PER_GAME: ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                  'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                  '3p', '3pa', '3p%', '2p', '2pa', '2p%', 'efg%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
+                  'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+
+      TOTALS: ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                '3p', '3pa', '3p%', '2p', '2pa', '2p%', 'efg%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
+                'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+
+      PER_36_MIN: ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                    'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                    '3p', '3pa', '3p%', '2p', '2pa', '2p%', 'ft', 'fta', 'ft%', 'orb', 'drb', 'tbr', 
+                    'ast', 'stl', 'blk', 'tov', 'pf', 'pts']
+          
+      PER_100_POSS: ['id', 'name', 'position', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year',
+                      'season', 'age', 'team', 'league', 'position', 'games', 'games_started', 'mp', 'fg', 'fga', 'fg%',
+                      '3p', '3pa', '3p%', '2p', '2pa', '2p%','ft', 'fta', 'ft%', 'tbr', 
+                      'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'unknown', 'offensive_rating', 'defensive_rating']
+
+      ADVANCED: ['id', 'name', 'heigth_cm', 'heigth_feet', 'draft', 'draft_team', 'draft_overall', 'draft_year', 'season',
+                  'age', 'team', 'league', 'position', 'games', 'mp', 'per', 'ts%', '3par', 'ftr', 'orb%',
+                  'drb%', 'trb%', 'ast%', 'stl%', 'blk%', 'tov%', 'usg%', 'unknown', 'ows', 'dws', 'ws', 'ws/48', 'unknown',
+                  'obpm', 'dbpm', 'bpm', 'vorp']
 
 DATA_PREPROCESS_PIPELINE:
   CONTROL:
     FEATURESET_BUILD: True
-    FEATURESET_CORRELATION: False
-    FEATURESET_IMPUTATION_VISUALIZER: False
-    FEATURESET_VAR_ANALYSIS: False
+    FEATURESET_CORRELATION: True
+    FEATURESET_IMPUTATION_VISUALIZER: True
+    FEATURESET_VAR_ANALYSIS: True
   FEATURE_SET:
     YEAR_BUILD: 1996
     FEATURESET_EXCEL: 'featureset_{output}_{agg}_{build_year}.xlsx'
@@ -166,10 +216,10 @@ DATA_PREPROCESS_PIPELINE:
   CORRELATION:
     MAX_VARS_PLOT: 9
     PLOT_TYPE_1_TITLE: 'Correlation College to NBA (Success As {var})'
-    PLOT_TYPE_3_TITLE: 'High Correlation Var - {corr} - {x} vs {y}'
+    PLOT_TYPE_3_TITLE: 'High Correlation Var - {corr} - {y} vs {x}'
     PLOT_TYPE_1_FILE: 'ALL_Correlation_to_{var}_{number}.png'
     PLOT_TYPE_2_FILE: 'Correlation_to_{var}_{number}.png'
-    PLOT_TYPE_3_FILE: 'high_correlation_{x}_{y}.png'
+    PLOT_TYPE_3_FILE: 'high_correlation_{y}_{x}.png'
     PLOT_TYPE_4_TITLE: 'Histogram NBA Players {success_var} during Rookie Contract'
     HISTOGRAM_BINS: 20
     PLOT_TYPE_4_FILE: 'histogram_{success_var}.png'
@@ -207,7 +257,7 @@ DATA_PREPROCESS_PIPELINE:
 MODELING_PIPELINE:
   CONTROL:
     HYPER_PARAMETER_TUNING: False
-    HYPER_PARAMETER_SUMMARY: False
+    HYPER_PARAMETER_SUMMARY: True
     TRAIN_AND_PREDICT: True
   RANDOM_SEED: 1234
   TRAINING:
@@ -259,7 +309,8 @@ MODELING_PIPELINE:
       'draft_overall',
     ]
     DRAFT_CLASS_PREDICTIONS_EXCEL: 'draft_class_{year}_predictions_{var}.xlsx'
-    DRAFT_CLASS_PREDICTIONS_PLOT: 'draft_class_{year}_predictions_{var}.png'
+    DRAFT_CLASS_PREDICTIONS_PLOT_1: 'draft_class_{year}_predictions_{var}.png'
+    DRAFT_CLASS_PREDICTIONS_PLOT_2: 'draft_class_{year}_predictions_picks.png'
     FEATURE_IMPORTANCE_EXCEL: 'draft_class_{year}_feature_importance_{var}.xlsx'
     FEATURE_IMPORTANCE_PLOT_TITLE: 'Random Forest Feature Importance'
     FEATURE_IMPORTANCE_PLOT_FILE: '{n}_feature_importance_plot.png'
