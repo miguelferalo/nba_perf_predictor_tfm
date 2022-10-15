@@ -1,5 +1,5 @@
 from config import config_variables
-from src.components.nba_scrapper.BasketScraper import BasketScrapper
+from src.components.nba_scraper.BasketScraper import BasketScraper
 from src.components.data_preprocessing.BasketballDataProcessor import BasketDataProcessor
 from src.components.modeling.DraftForecast import DraftForecast
 
@@ -9,19 +9,19 @@ from src.components.modeling.DraftForecast import DraftForecast
 if config_variables['FLOW_SWITCH']['WEB_SCRAPING']:
 
     print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'WEB SCRAPING PIPELINE'))
-    basketball_scrapper = BasketScrapper(config_variables=config_variables)
+    basketball_scraper = BasketScraper(config_variables=config_variables)
 
     if config_variables['SCRAPING_VARS']['CONTROL']['COLLEGE_SCRAPING']:
 
         #Get Data of college players
         print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'COLLEGE DATA WEB SCRAPING'))
-        basketball_scrapper.college_data_scraping()
+        basketball_scraper.college_data_scraping()
         print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'COLLEGE DATA WEB SCRAPING'))
 
     if config_variables['SCRAPING_VARS']['CONTROL']['NBA_SCRAPING']:
         #Get Data of NBA players
         print(config_variables['LOGGING_MESSAGE']['START'].format(step = 'NBA DATA WEB SCRAPING'))
-        basketball_scrapper.nba_data_scraping()
+        basketball_scraper.nba_data_scraping()
         print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'NBA DATA WEB SCRAPING'))
 
     print(config_variables['LOGGING_MESSAGE']['END'].format(step = 'WEB SCRAPING PIPELINE'))

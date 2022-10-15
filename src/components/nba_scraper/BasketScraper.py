@@ -6,7 +6,7 @@ from os.path import dirname, abspath
 import time
 
 
-class BasketScrapper(object):
+class BasketScraper(object):
 
     def __init__(self, config_variables):
         self.config = config_variables
